@@ -56,6 +56,7 @@
 #include "Renderer/Renderer2D.h"
 #include "Renderer/TextRenderer.h"
 #include "Renderer/Utilities/Renderer3D/Renderer3D.h"
+#include "Renderer/PostProcess.h"
 #include "Renderer/Utilities/Renderer3D/Material.h"
 #include "Renderer/Shadow/ShadowPass.h"
 #include "Core/Project/Project.h"
@@ -134,6 +135,83 @@
 
 namespace Conqueror
 {
+
+    namespace
+    {
+        // TAA için sprite hareket kaydı (272): sprite'lar mesh gibi hareket vektörü / derinlik geçmişi yazmaz. Yeni beliren (Content
+        // Browser'dan bırakılan fotoğraf), taşınan, boyutu / görseli / rengi değişen sprite'ın dünya kutusu o karede hareketli işaretlenir
+        // (parçacıklardaki gibi MarkMovingBounds; önceki karenin dikdörtgeni de TAA'ya gider). İşaretlenmeyince kamera dururken bu
+        // pikseller "oturmuş" sayılıyor, fotoğraf saniyelerce arkasındaki ızgara / gökyüzü geçmişiyle karışıp noktalı görünüyordu
+        struct SpriteMotionState
+        {
+            glm::mat4 Transform{ 1.0f };
+            glm::vec4 Look{ 0.0f };      // renk
+            glm::vec4 Bounds{ 0.0f };    // yerel sınırlar (en küçük xy, en büyük xy)
+            const void* Texture = nullptr;
+            uint64_t Serial = 0;
+        };
+        struct SpriteMotionView
+        {
+            uint64_t Prev = 0, Cur = 0;
+            size_t Drawn = 0;
+            std::unordered_map<uint64_t, SpriteMotionState> Items;
+        };
+        std::unordered_map<const void*, SpriteMotionView> s_SpriteMotion;
+        uint64_t s_SpriteMotionSerial = 0;
+        SpriteMotionView* s_SpriteMotionCur = nullptr;
+
+        void SpriteMotionBeginView()
+        {
+            const void* view = PostProcessStack::GetCurrentStack();
+            if (!view)
+            {
+                s_SpriteMotionCur = nullptr;
+                return;
+            }
+            SpriteMotionView& v = s_SpriteMotion[view];
+            // Çizilmeyen sprite kayıtları zamanla atılır (silinen nesneler)
+            if (v.Items.size() > 4 * v.Drawn + 64)
+                for (auto it = v.Items.begin(); it != v.Items.end();)
+                    it = it->second.Serial < v.Cur ? v.Items.erase(it) : std::next(it);
+            v.Prev = v.Cur;
+            v.Cur = ++s_SpriteMotionSerial;
+            v.Drawn = 0;
+            s_SpriteMotionCur = &v;
+        }
+
+        void SpriteMotionTrack(uint64_t key, const glm::mat4& transform, const SpriteRendererComponent& sprite)
+        {
+            if (!s_SpriteMotionCur)
+                return;
+            SpriteMotionView& v = *s_SpriteMotionCur;
+            ++v.Drawn;
+            glm::vec2 mn(-0.5f), mx(0.5f);
+            Renderer2D::GetSpriteLocalBounds(sprite, mn, mx);
+            const glm::vec4 bounds(mn, mx);
+            auto [it, inserted] = v.Items.try_emplace(key);
+            SpriteMotionState& st = it->second;
+            bool changed = inserted || st.Serial != v.Prev || st.Texture != sprite.Texture.get() || st.Look != sprite.Color || st.Bounds != bounds;
+            for (int c = 0; c < 4 && !changed; ++c)
+                for (int r = 0; r < 4 && !changed; ++r)
+                    changed = std::abs(st.Transform[c][r] - transform[c][r]) > 1e-5f * std::max(1.0f, std::abs(transform[c][r]));
+            if (changed)
+            {
+                glm::vec3 lo(1e30f), hi(-1e30f);
+                for (int i = 0; i < 4; ++i)
+                {
+                    const glm::vec4 p = transform * glm::vec4((i & 1) ? mx.x : mn.x, (i & 2) ? mx.y : mn.y, 0.0f, 1.0f);
+                    lo = glm::min(lo, glm::vec3(p));
+                    hi = glm::max(hi, glm::vec3(p));
+                }
+                Renderer3D::MarkMovingBounds((lo + hi) * 0.5f, (hi - lo) * 0.5f + glm::vec3(0.01f));
+            }
+            st.Transform = transform;
+            st.Look = sprite.Color;
+            st.Bounds = bounds;
+            st.Texture = sprite.Texture.get();
+            st.Serial = v.Cur;
+        }
+    }
     // Ray Traced GI: ikincil kamera çizimi (Render Texture kamerası) oyun görünümünün prob hacmini izlemeden kullanır
     static bool s_GISecondaryView = false;
 
@@ -1497,6 +1575,8 @@ namespace Conqueror
                 float ZPosition;
             };
 
+            // TAA sprite hareket kaydı (272): bu görünümde bu karede çizilen sprite'lar önceki çizimiyle karşılaştırılır
+            SpriteMotionBeginView();
             std::vector<RenderItem> renderItems;
 
             // Sprite'ları topla
@@ -1773,6 +1853,8 @@ namespace Conqueror
                     // Sprite Skin: kemiklerle bükülmüş ağ (bağlıysa)
                     else if (!SpriteAnimation2D::DrawSkinned(*this, item.Entity, *sprite, sprite->Color))
                         Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, sprite->Color, *sprite);
+                    if (!isScreenSpace)
+                        SpriteMotionTrack((uint64_t)(uint32_t)item.Entity, finalTransform, *sprite);
                 }
                 else if (item.ItemType == RenderItem::Type::Text)
                 {
@@ -2295,6 +2377,8 @@ namespace Conqueror
             float ZPosition; // Z-depth sorting için
         };
 
+        // TAA sprite hareket kaydı (272): editör görünümünde de (Content Browser'dan bırakılan fotoğraf)
+        SpriteMotionBeginView();
         std::vector<RenderItem> renderItems;
 
         // Sprite'ları topla
@@ -2581,6 +2665,7 @@ namespace Conqueror
                 // Sprite Skin: kemiklerle bükülmüş ağ (bağlıysa)
                 else if (!SpriteAnimation2D::DrawSkinned(*this, item.Entity, *sprite, sprite->Color))
                     Renderer2D::DrawSprite(finalTransform, sprite->Texture, sprite->TilingFactor, sprite->Color, *sprite);
+                SpriteMotionTrack((uint64_t)(uint32_t)item.Entity, finalTransform, *sprite);
             }
             else if (item.ItemType == RenderItem::Type::Text)
             {

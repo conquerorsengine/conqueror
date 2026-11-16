@@ -16,6 +16,7 @@
 #include "Renderer/RenderSettings.h"
 #include "Renderer/Lightmap/LightmapParameters.h"
 #include "Scene/PostProcessVolume.h"
+#include "Core/Project/EditorInstalls.h"
 #include "Renderer/SpriteAtlas.h"
 #include "Grid/GridSystem.h"
 #include "Renderer/SpriteSheet.h"
@@ -370,7 +371,11 @@ namespace Conqueror::Editor
         thumb.WriteTime = entry.WriteTime;
         try
         {
-            thumb.Texture = Texture2D::Create(key);
+            // Süzülerek küçültülmüş önizleme (272): görselin kendisi mipmap'siz (Sprite / UI) olabilir, kartta noktalı görünüyordu.
+            // stb'nin açamadığı biçimlerde (EXR, DDS, KTX...) eskisi gibi doku
+            thumb.Texture = Texture2D::CreateThumbnail(key, 320);
+            if (!thumb.Texture)
+                thumb.Texture = Texture2D::Create(key);
             thumb.Failed = !thumb.Texture || thumb.Texture->GetRendererID() == 0 || thumb.Texture->GetWidth() == 0;
         }
         catch (...)
@@ -2320,8 +2325,32 @@ namespace Conqueror::Editor
         bool any = false;
         for (const std::string& file : m_DroppedFiles)
         {
-            const fs::path source(file);
             std::error_code ec;
+            // Tarayıcıdan sürüklenen resim / dosya (Chrome, Firefox Linux'ta yalnız adresini verir): indirilir. Unity / Unreal'de
+            // tarayıcı dosyayı kendisi verdiği için sürükleme çalışır; burada adres sessizce "bulunamadı" sayılıyordu
+            if (file.rfind("http://", 0) == 0 || file.rfind("https://", 0) == 0)
+            {
+                std::string name = file.substr(0, file.find_first_of("?#"));
+                name = name.substr(name.find_last_of('/') + 1);
+                for (char& c : name)
+                    if (c == '%' || c == ':' || c == '\\' || c == '"' || c == '<' || c == '>' || c == '|' || c == '*')
+                        c = '_';
+                if (name.empty() || name.find('.') == std::string::npos)
+                    name = "Downloaded" + (name.empty() ? std::string(".png") : "_" + name + ".png");
+                const fs::path dest = MakeUniquePath(target / name);
+                std::string error;
+                if (Installs::DownloadFile(file, dest, error))
+                {
+                    CQ_CORE_INFO("Imported (downloaded): {0}", dest.string());
+                    m_SelectedPath = dest;
+                    m_ScrollToSelected = true;
+                    any = true;
+                }
+                else
+                    CQ_CORE_ERROR("Import failed: {0} ({1})", file, error);
+                continue;
+            }
+            const fs::path source(file);
             if (!fs::exists(source, ec))
             {
                 CQ_CORE_WARN("Import skipped, not found: {0}", file);

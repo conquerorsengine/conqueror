@@ -1733,6 +1733,9 @@ namespace Conqueror::Editor
     {
         EventDispatcher dispatcher(e);
         dispatcher.Dispatch<WindowFileDropEvent>([this](WindowFileDropEvent& drop) {
+            // Her bırakma günlüğe yazılır: bırakma editöre hiç ulaşmadıysa (pencere sistemi) ya da içe aktarılamadıysa ayırt edilir
+            CQ_CORE_INFO("Dropped on the editor: {0} item(s){1}{2}", drop.GetPaths().size(), drop.GetPaths().empty() ? "" : ", first ",
+                         drop.GetPaths().empty() ? std::string() : drop.GetPaths().front());
             if (m_ContentBrowserPanel)
                 m_ContentBrowserPanel->QueueDroppedFiles(drop.GetPaths());
             return true;

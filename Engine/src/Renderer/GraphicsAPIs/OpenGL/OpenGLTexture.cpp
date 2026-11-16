@@ -675,4 +675,33 @@ namespace Conqueror
             return;
         glBindTextureUnit(slot, m_RendererID);
     }
+
+    std::shared_ptr<Texture2D> Texture2D::CreateThumbnail(const std::string& path, uint32_t maxSize)
+    {
+        if (Renderer::GetAPI() != RendererAPI::API::OpenGL || maxSize == 0)
+            return nullptr;
+        int w = 0, h = 0, comps = 0;
+        stbi_uc* data = stbi_load(path.c_str(), &w, &h, &comps, 4);
+        if (!data || w <= 0 || h <= 0)
+        {
+            if (data)
+                stbi_image_free(data);
+            return nullptr;
+        }
+        const float scale = std::min(1.0f, (float)maxSize / (float)std::max(w, h));
+        const int tw = std::max(1, (int)std::lround(w * scale)), th = std::max(1, (int)std::lround(h * scale));
+        std::vector<uint8_t> pixels((size_t)tw * th * 4);
+        if (tw != w || th != h)
+            stbir_resize(data, w, h, 0, pixels.data(), tw, th, 0, STBIR_RGBA, STBIR_TYPE_UINT8_SRGB, STBIR_EDGE_CLAMP, STBIR_FILTER_MITCHELL);
+        else
+            std::memcpy(pixels.data(), data, pixels.size());
+        stbi_image_free(data);
+        for (size_t i = 0; i < pixels.size(); i += 4)
+            std::swap(pixels[i], pixels[i + 2]);   // RGBA -> BGRA
+        // Varsayılan ayarlar: mip zinciri + üç doğrusal süzgeç (kart boyutu değişince de düzgün küçülür)
+        auto tex = std::make_shared<OpenGLTexture2D>((uint32_t)tw, (uint32_t)th, pixels.data());
+        if (!tex->GetRendererID())
+            return nullptr;
+        return tex;
+    }
 }

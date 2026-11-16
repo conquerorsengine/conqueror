@@ -454,6 +454,7 @@ typedef struct _GLFWlibraryWayland
     struct wl_data_offer*       dragOffer;
     _GLFWwindow*                dragFocus;
     uint32_t                    dragSerial;
+    uint32_t                    dragAction;   // Conqueror: bileşikçinin seçtiği eylem (wl_data_offer.action, sürüm 3)
 
     const char*                 tag;
 

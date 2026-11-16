@@ -150,9 +150,12 @@ static void registryHandleGlobal(void* userData,
     {
         if (!_glfw.wl.dataDeviceManager)
         {
+            // Conqueror: sürüm 3 (sürükle-bırak eylem pazarlığı). Sürüm 1'de eylem hiç bildirilmiyordu; GNOME'da (Mutter)
+            // dosya yöneticisinden sürüklenen dosya bazen bırakılmıyordu
             _glfw.wl.dataDeviceManager =
                 wl_registry_bind(registry, name,
-                                 &wl_data_device_manager_interface, 1);
+                                 &wl_data_device_manager_interface,
+                                 version < 3 ? version : 3);
         }
     }
     else if (strcmp(interface, "xdg_wm_base") == 0)

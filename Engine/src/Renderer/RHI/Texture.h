@@ -60,6 +60,10 @@ namespace Conqueror
         static std::shared_ptr<Texture2D> CreateFromCompressedImageMemory(const unsigned char* data, uint32_t byteSize);
         /// Assimp sıkıştırılmamış gömülü doku (BGRA)
         static std::shared_ptr<Texture2D> CreateFromRawBGRA(uint32_t width, uint32_t height, const unsigned char* bgraPixels);
+        // Küçük önizleme (Content Browser, 272): görsel içe aktarma ayarından bağımsız olarak sRGB doğru süzgeçle (Mitchell) en uzun
+        // kenarı maxSize olacak şekilde küçültülür, mip zinciriyle yüklenir. Mipmap'siz Sprite / UI görselinin kendisi 60-160 piksele
+        // çizilince örnekleme seyrek kalıyor, küçük resim noktalı görünüyordu. Çözülemeyen biçimde nullptr
+        static std::shared_ptr<Texture2D> CreateThumbnail(const std::string& path, uint32_t maxSize);
 
         static void ClearCache() { s_Cache.clear(); }
         // Önbellekteki (yüklü) dokuyu yerinde yenile: içe aktarma ayarları değişince tüm kullanıcılar güncellenir

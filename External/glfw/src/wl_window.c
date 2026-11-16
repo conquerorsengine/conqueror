@@ -1988,9 +1988,25 @@ static void dataOfferHandleOffer(void* userData,
     }
 }
 
+static void dataOfferHandleSourceActions(void* userData,
+                                         struct wl_data_offer* offer,
+                                         uint32_t actions)
+{
+}
+
+static void dataOfferHandleAction(void* userData,
+                                  struct wl_data_offer* offer,
+                                  uint32_t action)
+{
+    if (offer == _glfw.wl.dragOffer)
+        _glfw.wl.dragAction = action;
+}
+
 static const struct wl_data_offer_listener dataOfferListener =
 {
-    dataOfferHandleOffer
+    dataOfferHandleOffer,
+    dataOfferHandleSourceActions,
+    dataOfferHandleAction
 };
 
 static void dataDeviceHandleDataOffer(void* userData,
@@ -2049,8 +2065,22 @@ static void dataDeviceHandleEnter(void* userData,
                 _glfw.wl.dragOffer = offer;
                 _glfw.wl.dragFocus = window;
                 _glfw.wl.dragSerial = serial;
+                _glfw.wl.dragAction = 0;
 
                 wl_data_offer_accept(offer, serial, "text/uri-list");
+                // Conqueror: sürükleme sırasında imleç konumu pencereye iletilir (X11'deki XdndPosition gibi). Wayland'de
+                // sürüklerken işaretçi olayı gelmez: editör bırakılan dosyanın hangi klasörün üstüne bırakıldığını bilemiyordu
+                window->wl.cursorPosX = wl_fixed_to_double(x);
+                window->wl.cursorPosY = wl_fixed_to_double(y);
+                _glfwInputCursorPos(window, window->wl.cursorPosX, window->wl.cursorPosY);
+                // Conqueror: sürüm 3'te hedef eylemini bildirmezse bırakma iptal edilebilir. Yalnız kopyalama: Shift ile
+                // sürüklense de kaynak (dosya yöneticisi) özgün dosyayı silmez
+                if (wl_data_offer_get_version(offer) >= WL_DATA_OFFER_SET_ACTIONS_SINCE_VERSION)
+                {
+                    wl_data_offer_set_actions(offer,
+                                              WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY,
+                                              WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY);
+                }
             }
         }
     }
@@ -2082,6 +2112,17 @@ static void dataDeviceHandleMotion(void* userData,
                                    wl_fixed_t x,
                                    wl_fixed_t y)
 {
+    // Conqueror: GTK / Qt gibi kabul her harekette yinelenir (kaynak hedefin hâlâ kabul ettiğini bilir)
+    if (_glfw.wl.dragOffer)
+        wl_data_offer_accept(_glfw.wl.dragOffer, _glfw.wl.dragSerial, "text/uri-list");
+    // Conqueror: imleç konumu sürüklerken de güncellenir (bırakılan yerin altındaki klasör / öğe bulunur)
+    _GLFWwindow* window = _glfw.wl.dragFocus;
+    if (window)
+    {
+        window->wl.cursorPosX = wl_fixed_to_double(x);
+        window->wl.cursorPosY = wl_fixed_to_double(y);
+        _glfwInputCursorPos(window, window->wl.cursorPosX, window->wl.cursorPosY);
+    }
 }
 
 static void dataDeviceHandleDrop(void* userData,
@@ -2091,6 +2132,12 @@ static void dataDeviceHandleDrop(void* userData,
         return;
 
     char* string = readDataOfferAsString(_glfw.wl.dragOffer, "text/uri-list");
+    // Conqueror: sürüm 3'te veri alındıktan sonra bırakma bitirilir (kaynak işlemi tamamlanmış sayar)
+    if (string && _glfw.wl.dragAction != 0 &&
+        wl_data_offer_get_version(_glfw.wl.dragOffer) >= WL_DATA_OFFER_FINISH_SINCE_VERSION)
+    {
+        wl_data_offer_finish(_glfw.wl.dragOffer);
+    }
     if (string)
     {
         int count;
@@ -3222,11 +3269,31 @@ static void dataSourceHandleCancelled(void* userData,
     _glfw.wl.selectionSource = NULL;
 }
 
+// Conqueror: sürüm 3 kaynak olayları (yalnız sürükle-bırak kaynaklarına gelir; pano kaynağı için boş)
+static void dataSourceHandleDndDropPerformed(void* userData,
+                                             struct wl_data_source* source)
+{
+}
+
+static void dataSourceHandleDndFinished(void* userData,
+                                        struct wl_data_source* source)
+{
+}
+
+static void dataSourceHandleAction(void* userData,
+                                   struct wl_data_source* source,
+                                   uint32_t action)
+{
+}
+
 static const struct wl_data_source_listener dataSourceListener =
 {
     dataSourceHandleTarget,
     dataSourceHandleSend,
     dataSourceHandleCancelled,
+    dataSourceHandleDndDropPerformed,
+    dataSourceHandleDndFinished,
+    dataSourceHandleAction,
 };
 
 void _glfwSetClipboardStringWayland(const char* string)
