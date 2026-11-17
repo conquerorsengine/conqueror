@@ -665,7 +665,8 @@ namespace Conqueror
         m_ReactiveUsed = false;
         // Temporal AA: Halton(2,3) dizisiyle 16 karelik alt piksel titreşimi. 8 konum küçük nesnelerin / küçük pencerede
         // kenarların örtüsünü 8 kaba basamağa bölüyordu (hafif merdiven); durunca birikim uzun olduğundan 16'nın ortalaması alınır
-        m_JitterActive = m_WantTAA;
+        // Hata ayıklama görünümünde (275) titreşim kapalı; sahne hedefinin ekleri ise son ışıklı karedeki gibi kalır
+        m_JitterActive = m_WantTAA && !m_HoldTemporalHistory;
         m_StabilityActive = m_WantStability;
         if (!m_StabilityActive)
             m_StabValid = false;
@@ -703,6 +704,18 @@ namespace Conqueror
     bool PostProcessStack::IsSceneDrawTarget(uint32_t framebuffer) const
     {
         return framebuffer == m_SceneFramebuffer->GetRendererID() || (m_CoverageSamples > 0 && framebuffer == m_CoverageFramebuffer);
+    }
+
+    void PostProcessStack::ApplyCurrentJitter(glm::mat4& viewProjection)
+    {
+        glm::vec2 jitter;
+        if (!GetCurrentJitter(jitter))
+            return;
+        for (int c = 0; c < 4; ++c)
+        {
+            viewProjection[c][0] += jitter.x * viewProjection[c][3];
+            viewProjection[c][1] += jitter.y * viewProjection[c][3];
+        }
     }
 
     bool PostProcessStack::GetCurrentJitter(glm::vec2& outNDC)
@@ -2603,6 +2616,10 @@ namespace Conqueror
             m_HasPrevViewProj = true;
         }
         ++m_FrameIndex;
+        // Hata ayıklama görünümünde (oyunda F1/F2/F4, 275) sonraki karenin istekleri (sahne hedefinin ekleri, örnek sayısı, titreşim)
+        // son ışıklı karedeki gibi kalır: değişince sahne hedefleri yeniden kurulup bütün zamansal geçmiş sıfırlanıyordu
+        // (hedefler yeniden kurulunca geçmişin sıfırlanması doğru; F3'e dönüş yine saydam sönme / yeniden yakınsama gösteriyordu)
+        if (!m_HoldTemporalHistory)
         {
             // Kenar yumuşatma istekleri (sonraki karenin sahne hedefi ve titreşimi)
             const AntiAliasingMode next = m_AAMode;
@@ -2611,7 +2628,7 @@ namespace Conqueror
             const bool taau = fx && !camera.Orthographic && IsLDRTemporalUpscaler(m_Upscaler);
             // DLSS de FSR 2'nin titreşim dizisini kullanır (Halton 2,3; evre sayısı 8 x ölçek², NVIDIA'nın önerisi)
             const bool fsr2 = fx && (m_UseFSR2 || m_UseDLSS || m_UseXeSS || m_UseMetalFX);
-            m_WantTAA = (temporal || t2x || taau || fsr2) && !m_HoldTemporalHistory;   // titreşim (+ hareket bayrağı için normal eki)
+            m_WantTAA = temporal || t2x || taau || fsr2;   // titreşim (+ hareket bayrağı için normal eki)
             m_WantTXAA = temporal && next == AntiAliasingMode::TXAA && !fsr2;
             // Temporal Stability: çoklu örnekli yöntemlerde de titreşim sahneye uygulanır (TXAA gibi); uygulanmayınca TAA olmayan bir
             // titreşimi geri alıyor, görüntüyü yarım piksel oynatıp yumuşatıyordu
@@ -2642,11 +2659,14 @@ namespace Conqueror
             m_WantStability = fx && !camera.Orthographic && settings.TemporalStability && !temporal && !taau && !fsr2
                               && (AntiAliasing::IsSingleFrame(next) || t2x);
         }
-        const bool ssgi = settings.ScreenSpaceGI && !settings.RayTracedGI;   // Ray Traced GI açıkken ekran izli GI yok
-        m_WantNormals = fx && (settings.ScreenSpaceReflections || ssgi) && !camera.Orthographic;
-        m_WantAlbedo = fx && ssgi && !camera.Orthographic;
-        if (!m_WantAlbedo && !m_HoldTemporalHistory)
-            m_GIHistoryValid = false;
+        if (!m_HoldTemporalHistory)
+        {
+            const bool ssgi = settings.ScreenSpaceGI && !settings.RayTracedGI;   // Ray Traced GI açıkken ekran izli GI yok
+            m_WantNormals = fx && (settings.ScreenSpaceReflections || ssgi) && !camera.Orthographic;
+            m_WantAlbedo = fx && ssgi && !camera.Orthographic;
+            if (!m_WantAlbedo)
+                m_GIHistoryValid = false;
+        }
 
         glActiveTexture(GL_TEXTURE0);
         if (depthTest) glEnable(GL_DEPTH_TEST);

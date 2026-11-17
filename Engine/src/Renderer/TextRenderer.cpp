@@ -1,3 +1,4 @@
+#include "Renderer/PostProcess.h"
 #include "TextRenderer.h"
 #include "Renderer.h"
 #include "RHI/Shader.h"
@@ -102,18 +103,22 @@ namespace Conqueror
     {
         s_DepthTestEnabled = enableDepthTest;
         s_Data.ViewProjection = camera.GetViewProjection();
+        PostProcessStack::ApplyCurrentJitter(s_Data.ViewProjection);   // TAA: 3D sahneyle aynı titreşim
     }
 
     void TextRenderer::BeginScene(const SceneCamera& camera, const glm::mat4& transform, bool enableDepthTest)
     {
         s_DepthTestEnabled = enableDepthTest;
         s_Data.ViewProjection = camera.GetProjection() * glm::inverse(transform);
+        PostProcessStack::ApplyCurrentJitter(s_Data.ViewProjection);   // TAA: 3D sahneyle aynı titreşim
     }
 
     void TextRenderer::BeginScene(const glm::mat4& viewProjection, bool enableDepthTest)
     {
         s_DepthTestEnabled = enableDepthTest;
         s_Data.ViewProjection = viewProjection;
+        if (enableDepthTest)
+            PostProcessStack::ApplyCurrentJitter(s_Data.ViewProjection);
     }
 
 

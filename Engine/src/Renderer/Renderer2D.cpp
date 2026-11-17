@@ -1,3 +1,4 @@
+#include "Renderer/PostProcess.h"
 #include "Renderer2D.h"
 #include "Renderer.h"
 #include "SpriteSheet.h"
@@ -167,6 +168,7 @@ namespace Conqueror
         ResetStats();
         ApplySceneState(enableDepthTest, enableDepthWrite);
         s_Data.ViewProjection = camera.GetViewProjection();
+        PostProcessStack::ApplyCurrentJitter(s_Data.ViewProjection);   // TAA: 3D sahneyle aynı titreşim (kenarlar yumuşar)
         ResetCustomShader();
         StartBatch();
     }
@@ -176,6 +178,7 @@ namespace Conqueror
         ResetStats();
         ApplySceneState(enableDepthTest, enableDepthWrite);
         s_Data.ViewProjection = camera.GetProjection() * glm::inverse(transform);
+        PostProcessStack::ApplyCurrentJitter(s_Data.ViewProjection);   // TAA: 3D sahneyle aynı titreşim (kenarlar yumuşar)
         ResetCustomShader();
         StartBatch();
     }
@@ -185,6 +188,8 @@ namespace Conqueror
         // UI: depth test kapalı (her zaman en önde)
         ApplySceneState(enableDepthTest, true);
         s_Data.ViewProjection = viewProjection;
+        if (enableDepthTest)   // dünyadaki canvas (ekran üstü UI titreşimsiz, keskin kalır)
+            PostProcessStack::ApplyCurrentJitter(s_Data.ViewProjection);
         ResetCustomShader();
         StartBatch();
     }

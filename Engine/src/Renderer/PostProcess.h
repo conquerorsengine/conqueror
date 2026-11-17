@@ -72,6 +72,10 @@ namespace Conqueror
 
         // Renderer3D: şu an bu görünümün sahne hedefine çiziliyorsa Temporal AA alt piksel titreşimi (NDC)
         static bool GetCurrentJitter(glm::vec2& outNDC);
+        // Görüş-izdüşüm matrisine bu karenin TAA alt piksel titreşimini uygular (yalnız sahne hedefine çizilirken; değilse dokunmaz).
+        // 2D dünya çizimi (sprite, metin, dünya canvas'ı) 3D sahneyle aynı titreşimle çizilmeli: titreşimsiz çizilen sprite'ın kenarları her
+        // karede aynı piksellere düşüyor, TAA onları yumuşatamıyor, eğik kenarlar merdivenli kalıyordu
+        static void ApplyCurrentJitter(glm::mat4& viewProjection);
         // Bu görünüm bu karede hareket verisi istiyor mu (nesne hareket vektörleri, hareket bayrağı, önceki konum): zamansal
         // yöntemler ve tek kare yöntemlerindeki zamansal kararlılık katmanı. Titreşim yalnız GetCurrentJitter ile uygulanır
         static bool WantsMotionData();
