@@ -808,7 +808,8 @@ EntitySetComponentField(fade, "RectTransform", "AnchorMin", {x: 0, y: 0});
 EntitySetComponentField(fade, "RectTransform", "AnchorMax", {x: 1, y: 1});
 EntitySetComponentField(fade, "RectTransform", "SizeDelta", {x: 0, y: 0});
 EntitySetComponentField(fade, "UIImage", "CornerRadius", 0);
-EntitySetColor(fade, 0, 0, 0, 1);
+// Sahnede saydam kaydedilir (editörde menü görünsün); ParkourMenu.cqs açılışta 1 yapıp siyahtan açar
+EntitySetColor(fade, 0, 0, 0, 0);
 EntitySetComponentField(fade, "UIImage", "RaycastTarget", false);
 CreateEntity("BuildSceneDone");
 """.replace("CATEGORY_COUNT", str(len(CATEGORIES))))

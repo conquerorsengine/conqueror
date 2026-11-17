@@ -3078,9 +3078,22 @@ namespace Conqueror
             BuildItems(scene, canvas, CanvasSize(canvas, screen), items);
             if (items.empty())
                 continue;
-            Renderer2D::BeginScene(viewProjection * GetCanvasWorldMatrix(canvas, screen), depthTest);
+            // Aynı canvas'ın öğeleri (panel, gölge, metin, tam ekran karartma) aynı düzlemde: derinlik yazılınca LEQUAL testi hangisinin
+            // önde kalacağını piksel piksel ve TAA titreşimiyle her karede değiştiriyordu; metin üstündeki öğeyle yarışıp noktalı görünüyor,
+            // hareket edince parçalanıyordu (274: Parkour menüsü). Unity'nin UI gölgelendiricisi gibi renk derinlik yazmadan, hiyerarşi
+            // sırasıyla çizilir; ardından yalnız derinlik yazılır (canvas'ın arkasındakiler ve sonra çizilen gizmo / nesneler için düzlem)
+            const glm::mat4 vp = viewProjection * GetCanvasWorldMatrix(canvas, screen);
+            Renderer2D::BeginScene(vp, depthTest, !depthTest);
             RenderItems(items, glm::mat4(1.0f), false, screen);
             Renderer2D::EndScene();
+            if (depthTest)
+            {
+                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                Renderer2D::BeginScene(vp, true, true);
+                RenderItems(items, glm::mat4(1.0f), false, screen);
+                Renderer2D::EndScene();
+                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            }
         }
     }
 

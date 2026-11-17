@@ -183,10 +183,10 @@ namespace Conqueror
         StartBatch();
     }
 
-    void Renderer2D::BeginScene(const glm::mat4& viewProjection, bool enableDepthTest)
+    void Renderer2D::BeginScene(const glm::mat4& viewProjection, bool enableDepthTest, bool enableDepthWrite)
     {
         // UI: depth test kapalı (her zaman en önde)
-        ApplySceneState(enableDepthTest, true);
+        ApplySceneState(enableDepthTest, enableDepthWrite);
         s_Data.ViewProjection = viewProjection;
         if (enableDepthTest)   // dünyadaki canvas (ekran üstü UI titreşimsiz, keskin kalır)
             PostProcessStack::ApplyCurrentJitter(s_Data.ViewProjection);
