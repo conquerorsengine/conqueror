@@ -28,6 +28,13 @@ namespace Conqueror
         // background: ızgara en arkada (gökyüzünün hemen önünde) çizilir; 2D görünümde sprite ve
         // modeller her zaman ızgaranın önünde görünür
         static void Render(const RenderCamera& camera, bool plane2D, bool linearOutput = true, bool background = false);
+        // Zamansal kenar yumuşatmalı (TAA, Temporal Stability, zamansal yükseltici) görünüm: 3D ızgara sahneye çizilmez, kenar yumuşatma
+        // ve ton eşlemeden sonra son görüntünün üstüne çizilmek üzere ertelenir (Unity Scene ızgarası / Unreal editör ilkelleri gibi).
+        // Sahne hedefine çizilirken çağrılır. Zamansal yöntem yoksa false döner, ızgara eskisi gibi sahneye çizilmelidir
+        static bool DeferToComposite(const RenderCamera& camera);
+        // Ertelenen ızgarayı son görüntüye (dokusu colorTexture, sRGB) çizer; ertelenen yoksa bir şey yapmaz. sceneDepth: görünümün
+        // (çok örneklide çözülmüş) sahne derinliği (PostProcessStack::GetSceneDepthTexture)
+        static void RenderDeferred(uint32_t colorTexture, uint32_t width, uint32_t height, uint32_t sceneDepth);
         static void Shutdown();
     };
 }

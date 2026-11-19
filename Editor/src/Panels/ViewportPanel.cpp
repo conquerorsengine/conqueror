@@ -332,7 +332,16 @@ namespace Conqueror::Editor
             }
         }
 
-        // 4. Işık / kamera simgeleri son görüntünün üstüne (Unity gibi): TAA'ya girmez, büyürken / dönerken iz bırakmaz
+        // 4. Zamansal kenar yumuşatmada 3D ızgara son görüntünün üstüne (Unity Scene ızgarası / Unreal editör ilkelleri gibi): TAA'ya
+        // girince kamera dönerken önündeki fotoğrafın / nesnenin hareketiyle izdüşülüp soluyordu (273b). Sahne bu karede ertelemediyse çizmez
+        if (m_Context)
+        {
+            const auto& spec = m_Framebuffer->GetSpecification();
+            EditorGrid::RenderDeferred(m_Framebuffer->GetColorAttachmentRendererID(0), std::min(width, spec.Width), std::min(height, spec.Height),
+                                       m_PostStack.GetSceneDepthTexture());
+        }
+
+        // 5. Işık / kamera simgeleri son görüntünün üstüne (Unity gibi): TAA'ya girmez, büyürken / dönerken iz bırakmaz
         if (m_Context)
         {
             RenderCommand::SetViewport(0, 0, width, height);

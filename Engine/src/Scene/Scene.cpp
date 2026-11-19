@@ -2736,7 +2736,13 @@ namespace Conqueror
             const uint32_t vpW = viewportBounds ? (uint32_t)std::max(1.0f, viewportBounds[1].x - viewportBounds[0].x) : std::max(m_ViewportWidth, 1u);
             const uint32_t vpH = viewportBounds ? (uint32_t)std::max(1.0f, viewportBounds[1].y - viewportBounds[0].y) : std::max(m_ViewportHeight, 1u);
             if (m_EditorViewOptions.Grid && !camera.Is2D())
-                EditorGrid::Render(RenderCamera::FromEditorCamera(camera, vpW, vpH), false, true);
+            {
+                // 273b: zamansal kenar yumuşatmalı görünümde ızgara TAA'dan geçmez, Viewport onu son görüntünün üstüne çizer
+                // (EditorGrid::RenderDeferred); zamansal yöntem yoksa eskisi gibi burada
+                const RenderCamera gridCamera = RenderCamera::FromEditorCamera(camera, vpW, vpH);
+                if (!EditorGrid::DeferToComposite(gridCamera))
+                    EditorGrid::Render(gridCamera, false, true);
+            }
 
             // 199: ekran üstü (HUD) canvas'lar sahne görünümünde çizilmez (Unreal UMG / Godot gibi): UI Editor sekmesinde
             // tasarlanır; dünya uzayı canvas'lar sahnede kalır. Eski davranış için View > Screen UI in Scene

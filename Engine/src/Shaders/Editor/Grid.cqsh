@@ -46,10 +46,22 @@ uniform int u_LinearOutput = 1;
 uniform int u_Orthographic = 0;
 uniform vec3 u_MinorColor = vec3(0.86);
 uniform vec3 u_MajorColor = vec3(1.0);
-uniform int u_DepthPass = 0;          // 1: yalnız derinlik (belirgin çizgi pikselleri ızgara düzleminin derinliğini yazar; TAA doğru yeniden izdüşürür)
 uniform int u_Background = 0;         // 1: arka plan katmanı (2D görünüm; her şey ızgaranın önünde)
 uniform float u_DepthErrorQuad = 0.0;   // derinlik kuantalamasının mesafe hatası: d² · bu (perspektif)
 uniform float u_DepthErrorConst = 0.0;  // ortografik: sabit
+// 1: son görüntünün üstüne (kenar yumuşatma ve ton eşlemeden sonra, TAA'ya girmeden; EditorGrid::RenderDeferred). Derinlik testi
+// sahne derinliğinden elle yapılır, karışım doğrusal uzayda u_Below (son görüntünün kopyası) ile
+uniform int u_Composite = 0;
+uniform mat4 u_InvViewProjection;       // titreşimsiz (composite)
+uniform sampler2D u_SceneDepth;         // sahne derinliği (bu karenin titreşimiyle çizildi)
+uniform sampler2D u_Below;              // son görüntü (sRGB)
+uniform vec2 u_JitterNDC = vec2(0.0);   // sahnenin bu karedeki alt piksel titreşimi
+uniform vec2 u_OutputSize = vec2(1.0);
+uniform sampler2D u_CoverageHistory;    // önceki karenin birikmiş örtme payı (ızgara düzlemi üstünde)
+uniform int u_CoverageHistoryValid = 0;
+uniform mat4 u_PrevViewProjection;      // önceki karenin titreşimsiz görüş-izdüşümü
+uniform float u_CoverageFeedback = 0.9;
+layout(location = 1) out float CoverageOut;   // composite: bu karenin birikmiş örtme payı (sahneye çizerken bu ek maskelenir)
 
 // Ben Golus "pristine grid" uyarlaması: AA'lı, moiré'siz, SABİT piksel kalınlığında çizgiler.
 // (Hücre oranlı kalınlık üst LOD seviyelerinde çizgileri metrelerce kalınlaştırırdı.)
@@ -65,6 +77,74 @@ float GridLines(vec2 uv, float pixelWidth)
     // Hücreler pikselden küçülünce ortalama yoğunluğa düş (moiré yok)
     g = mix(g, target, clamp(deriv * 2.0 - 1.0, 0.0, 1.0));
     return mix(g.x, 1.0, g.y);
+}
+
+// Composite: ızgaranın bu pikselde sahnedeki nesnelerin önünde kalan payı (0..1). Sahne bu karede titreşimle çizildi: sahne dokusundaki
+// örnek c, titreşimsiz (c - titreşim) konumunu gösterir; pikselin titreşimsiz konumu dokuda uv + titreşim'e düşer. Çevresindeki 4 örneğin
+// her biri, eskiden sahneye çizilirken olduğu gibi, kendi ışınının zemin düzlemiyle kesiştiği derinlikle (aynı öne alma payıyla) sınanır
+// ve çift doğrusal ağırlıkla toplanır: nesne kenarında yumuşak, titreşimle kıpırdamaz; zemine eş düzlemli yüzeyde eskisi gibi ızgara görünür
+float SceneCoverageAt(vec2 fragCoord, float pull)
+{
+    ivec2 sz = textureSize(u_SceneDepth, 0);
+    vec2 uv = fragCoord / u_OutputSize;
+    vec2 p = (uv + u_JitterNDC * 0.5) * vec2(sz) - 0.5;
+    ivec2 b = ivec2(floor(p));
+    vec2 f = p - vec2(b);
+    float cover = 0.0;
+    for (int k = 0; k < 4; ++k)
+    {
+        ivec2 o = ivec2(k & 1, k >> 1);
+        ivec2 t = clamp(b + o, ivec2(0), sz - 1);
+        float w = (o.x == 1 ? f.x : 1.0 - f.x) * (o.y == 1 ? f.y : 1.0 - f.y);
+        float sceneDepth = texelFetch(u_SceneDepth, t, 0).r;
+        if (sceneDepth >= 1.0)
+        {
+            cover += w;   // gökyüzü
+            continue;
+        }
+        vec2 ndc = (vec2(t) + 0.5) / vec2(sz) * 2.0 - 1.0 - u_JitterNDC;
+        vec4 n4 = u_InvViewProjection * vec4(ndc, -1.0, 1.0);
+        vec4 m4 = u_InvViewProjection * vec4(ndc, 0.0, 1.0);
+        vec3 n = n4.xyz / n4.w;
+        vec3 d = m4.xyz / m4.w - n;
+        if (abs(d.y) < 1e-8)
+            continue;
+        float tt = -n.y / d.y;
+        if (tt < 0.0)
+            continue;
+        vec4 pc = u_ViewProjection * vec4(n + tt * d - normalize(d) * pull, 1.0);
+        if (pc.z / pc.w * 0.5 + 0.5 <= sceneDepth)
+            cover += w;
+    }
+    return cover;
+}
+
+// Tek karelik örtme payı nesne kenarında titreşimle değişir (kenarın hangi örneğe düştüğü karede bir değişir): kenarlarda ince
+// parıltı olurdu. Pay, ızgara düzlemindeki noktanın önceki karedeki yerinden (düzlem bilindiği için kesin) geri izdüşülüp
+// biriktirilir; artı biçimli komşuluğun en küçük / en büyük değerine kırpılır (hareket eden nesnenin kenarında iz kalmaz,
+// tamamen açık / kapalı yerde pay tam 1 / 0'dır). Çizgilerin kendisi her karede yeniden hesaplanır, birikmez
+float TemporalCoverage(vec3 world, float pull)
+{
+    vec2 px = gl_FragCoord.xy;
+    float c = SceneCoverageAt(px, pull);
+    float lo = c, hi = c;
+    for (int k = 0; k < 4; ++k)
+    {
+        vec2 o = k == 0 ? vec2(1.0, 0.0) : k == 1 ? vec2(-1.0, 0.0) : k == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0);
+        float v = SceneCoverageAt(px + o, pull);
+        lo = min(lo, v);
+        hi = max(hi, v);
+    }
+    if (u_CoverageHistoryValid == 0)
+        return c;
+    vec4 prev = u_PrevViewProjection * vec4(world, 1.0);
+    if (prev.w <= 0.0)
+        return c;
+    vec2 puv = prev.xy / prev.w * 0.5 + 0.5;
+    if (any(lessThan(puv, vec2(0.0))) || any(greaterThan(puv, vec2(1.0))))
+        return c;
+    float h = clamp(texture(u_CoverageHistory, puv).r, lo, hi);
+    return mix(c, h, u_CoverageFeedback);
 }
 
 // Tek bir eksen çizgisi (piksel genişliği sabit)
@@ -92,6 +172,7 @@ void main()
     if (ndcDepth > 1.0)
         discard;
     float gridDepth = ndcDepth * 0.5 + 0.5;
+    float pull = 0.0;
     if (u_Background == 0)
     {
         // Zeminle eşit derinlik yarışı (z-fighting) olmasın: ızgara kameraya doğru yalnızca gerektiği kadar öne alınır:
@@ -103,7 +184,7 @@ void main()
         // Derinlik testi örnek başına yapıldığından duvar, kutu, merdiven gibi nesnelerin kenarları temiz kalır.
         float gridDist = length(world - u_CameraPos);
         float slope = min(fwidth(gridDist), gridDist * 0.05);
-        float pull = max(0.002, 0.75 * slope) + (u_DepthErrorQuad * gridDist * gridDist + u_DepthErrorConst) * 2.0;
+        pull = max(0.002, 0.75 * slope) + (u_DepthErrorQuad * gridDist * gridDist + u_DepthErrorConst) * 2.0;
         vec4 pc = u_ViewProjection * vec4(world - normalize(dir) * pull, 1.0);
         gridDepth = clamp(pc.z / pc.w * 0.5 + 0.5, 0.0, 1.0);
     }
@@ -167,7 +248,17 @@ void main()
     }
 
     alpha *= u_Opacity;
-    if (alpha < (u_DepthPass == 1 ? 0.25 : 0.002))
+    if (u_Composite == 1)
+    {
+        // Örtme payı düzlemin görünen her pikselinde yazılır (çizgi o piksele kayınca geçmişi hazır olsun)
+        float cover = TemporalCoverage(world, pull);
+        CoverageOut = cover;
+        vec4 below = texelFetch(u_Below, ivec2(gl_FragCoord.xy), 0);
+        float a = alpha * cover;
+        FragColor = a < 0.002 ? below : vec4(LinearToSRGB(mix(SRGBToLinear(below.rgb), SRGBToLinear(color), a)), below.a);
+        return;
+    }
+    if (alpha < 0.002)
         discard;
 
     if (u_LinearOutput == 1)
