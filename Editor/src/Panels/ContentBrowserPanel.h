@@ -189,6 +189,7 @@ namespace Conqueror::Editor
         void ImportDroppedFiles();
         std::vector<std::string> m_DroppedFiles;
         std::filesystem::path m_HoveredFolder;   // bu karede fare altındaki klasör
+        int m_HoveredTreeFrame = -1;             // m_HoveredFolder bu ImGui karesinde soldaki klasör ağacından geldi (içerik silmesin)
         void RevealInFileManager(const std::filesystem::path& path);
 
     private:

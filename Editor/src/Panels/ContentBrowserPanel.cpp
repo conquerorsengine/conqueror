@@ -635,6 +635,13 @@ namespace Conqueror::Editor
         }
         if (readOnly && path.parent_path() == EnginePackagesDir() && ImGui::IsItemHovered())
             ImGui::SetTooltip("Built-in package (read-only)");
+        // Dosya yöneticisinden sürüklenen dosya ağaçtaki klasörün üstüne bırakılınca o klasöre girer (Unity Project penceresi gibi).
+        // Ağaç içerikten önce çizildiği için içerik bölümü bu karede bu bilgiyi silmez
+        if (!readOnly && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
+        {
+            m_HoveredFolder = path;
+            m_HoveredTreeFrame = ImGui::GetFrameCount();
+        }
 
         // İkon + ad
         ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -658,7 +665,8 @@ namespace Conqueror::Editor
 
     void ContentBrowserPanel::DrawContent()
     {
-        m_HoveredFolder.clear();
+        if (m_HoveredTreeFrame != ImGui::GetFrameCount())
+            m_HoveredFolder.clear();
         // Arama: tüm alt klasörlerde ara
         std::vector<Entry> searchResults;
         const bool searching = m_Search[0] != '\0';
