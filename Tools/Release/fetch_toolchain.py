@@ -20,8 +20,28 @@ UA = {"User-Agent": "conqueror-release"}
 
 
 def get(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=600) as r:
-        return r.read()
+    """GitHub API istekleri iş akışının token'ıyla (GITHUB_TOKEN / GH_TOKEN) atılır: GitHub'ın paylaşılan makinelerinde kimliksiz
+    sınır saatte 60 istek, Release çalışmaları "HTTP Error 403: rate limit exceeded" ile kalıyordu. Geçici hatalarda yeniden denenir"""
+    import time
+    import urllib.error
+    headers = dict(UA)
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token and url.startswith("https://api.github.com/"):
+        headers["Authorization"] = "Bearer " + token
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=600) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code not in (403, 429, 500, 502, 503, 504) or attempt == 4:
+                raise
+            wait = 15 * (attempt + 1)
+            print(f"{url}: HTTP {e.code}, retrying in {wait} s", file=sys.stderr)
+            time.sleep(wait)
+        except urllib.error.URLError:
+            if attempt == 4:
+                raise
+            time.sleep(15 * (attempt + 1))
 
 
 def version_key(v):
