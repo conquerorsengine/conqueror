@@ -280,7 +280,7 @@ if(APPLE)
         set_source_files_properties(src/Core/Audio/AudioEngine.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++" SKIP_PRECOMPILE_HEADERS ON)
         target_link_libraries(${PROJECT_NAME} PUBLIC "-framework Metal" "-framework QuartzCore" "-framework UIKit" "-framework Foundation"
                               "-framework GameController" "-framework AVFoundation" "-framework AudioToolbox" "-framework CoreAudio"
-                              "-framework CoreFoundation" "-framework CoreVideo" "-framework Accelerate"
+                              "-framework CoreFoundation" "-framework CoreVideo" "-framework CoreGraphics" "-framework Accelerate"
                               # ARKit (XR Plug-in Management > ARKit): zayıf bağlantı, ARKit'siz cihazda oyun açılır, AR "Unavailable" der
                               "-weak_framework ARKit")
     else()
