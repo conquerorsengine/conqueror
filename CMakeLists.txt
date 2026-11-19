@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 project(ConquerorEngine VERSION 0.577.3 LANGUAGES C CXX)
+# Sürüm iki yerde: burada ve Engine/src/Core/Base/Version.h'de (editör --version, Hub, sürüm paketleri oradan okur). 0.575.3'te yalnız
+# burası güncellenmiş, editör ve paketler kendini 0.573.3 sanıyordu: farklıysa yapılandırma durur
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/Engine/src/Core/Base/Version.h" CQ_VERSION_LINE REGEX "^#define CQ_ENGINE_VERSION \"")
+if(NOT CQ_VERSION_LINE MATCHES "\"${PROJECT_VERSION}\"")
+    message(FATAL_ERROR "Engine/src/Core/Base/Version.h (${CQ_VERSION_LINE}) does not match project VERSION ${PROJECT_VERSION}")
+endif()
 # macOS: Metal arka ucu Objective-C++ (.mm). Dil en üst düzeyde açılmalı: yalnız Engine/ içinde açılınca Ninja
 # üreticisi "CMAKE_OBJCXX_COMPILE_OBJECT not set" hatasıyla duruyordu (CI macOS işi)
 if(APPLE)
