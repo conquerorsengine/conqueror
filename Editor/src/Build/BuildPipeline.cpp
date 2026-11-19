@@ -1647,8 +1647,15 @@ namespace Conqueror::Editor
             }
             else
                 cmd += " --simulator";
-            if (!ip.CameraUsage.empty() && safe(ip.CameraUsage))
-                cmd += " --camera-usage \"" + ip.CameraUsage + "\"";
+            // ARKit kamera ister: kullanım metni yoksa iOS oturumu açarken uygulamayı kapatır (NSCameraUsageDescription zorunlu)
+            std::string cameraUsage = ip.CameraUsage;
+            if (cameraUsage.empty() && (o.Config.XR.ARKit || ip.RequiresARKit))
+                cameraUsage = "The camera is used for augmented reality.";
+            if (!cameraUsage.empty() && safe(cameraUsage))
+                cmd += " --camera-usage \"" + cameraUsage + "\"";
+            // Requires ARKit: yalnız ARKit'li cihazlara kurulur (App Store UIRequiredDeviceCapabilities arkit)
+            if (ip.RequiresARKit)
+                cmd += " --require-arkit";
             const fs::path icon = !o.Config.Player.Icon.empty() ? o.ProjectDir / o.Config.Player.Icon : root / "Resources" / "Logo" / "AppIcon" / "conqueror_256.png";
             if (fs::exists(icon, ec) && safe(icon.string()))
                 cmd += " --icon \"" + icon.string() + "\"";

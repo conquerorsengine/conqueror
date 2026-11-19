@@ -6,3 +6,4 @@ Scenes:
   - Assets/Scenes/Main.cqscene
 XR:
   ARCore: true
+  ARKit: true

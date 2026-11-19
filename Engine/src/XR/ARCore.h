@@ -13,7 +13,8 @@
 // tabletlerde gerçek AR. Google'ın ARCore SDK'sı (libarcore_sdk_c.so, "ARCore Additional Terms of Service") depoda değildir:
 // APK paketleyici AR projelerinde Google Maven'dan indirir, motor çalışma zamanında dlopen ile açar. Kamera görüntüsü sahnenin
 // arka planı olur, AR kamerası cihazın pozunu ve görüş açısını alır, düzlemler ve isabet testi betiklere açılır.
-// Masaüstünde yoktur: AR şablonu orada kendi simülasyonunu (AR Simulation) kullanır.
+// iPhone / iPad'de aynı işlevler Apple ARKit ile çalışır (XR/ARKitBridge.h, Platform/iOS/ARKitSession.mm). Masaüstünde yoktur: AR şablonu
+// orada kendi simülasyonunu (AR Simulation) kullanır.
 namespace Conqueror
 {
     namespace ARCore

@@ -101,6 +101,12 @@ def write_info_plist(app: Path, args, simulator: bool):
     info["UISupportedInterfaceOrientations~ipad"] = orientations
     if args.camera_usage:
         info["NSCameraUsageDescription"] = args.camera_usage
+    if getattr(args, "require_arkit", False):
+        # Player Settings > iOS > Requires ARKit: App Store oyunu yalnız ARKit'li cihazlarda gösterir
+        caps = list(info.get("UIRequiredDeviceCapabilities", ["arm64"]))
+        if "arkit" not in caps:
+            caps.append("arkit")
+        info["UIRequiredDeviceCapabilities"] = caps
     if getattr(args, "player", False):
         # Conqueror Player (264): .cqspace oyunlarını Dosyalar / AirDrop / "Open in" ile açar
         info["CFBundleDocumentTypes"] = [{"CFBundleTypeName": "Conqueror game", "CFBundleTypeRole": "Viewer",
@@ -217,6 +223,7 @@ def main():
     ap.add_argument("--orientation", choices=["landscape", "portrait", "all"], default="landscape")
     ap.add_argument("--devices", choices=["universal", "iphone", "ipad"], default="universal")
     ap.add_argument("--camera-usage", default="", help="NSCameraUsageDescription (AR)")
+    ap.add_argument("--require-arkit", action="store_true", help="UIRequiredDeviceCapabilities arkit (Player Settings > iOS > Requires ARKit)")
     ap.add_argument("--player", action="store_true", help="Conqueror Player app: opens .cqspace games (give an empty game folder)")
     ap.add_argument("--icon", type=Path)
     ap.add_argument("--build-root", type=Path, default=ENGINE_ROOT / "build-ios")

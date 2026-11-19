@@ -150,6 +150,7 @@ namespace Conqueror {
         bool InitializeOnStartup = false;     // Initialize XR on Startup
         bool OpenXR = true;                   // sağlayıcı: OpenXR (Monado, SteamVR, Meta Quest Link, Windows Mixed Reality ...)
         bool ARCore = false;                  // Android sekmesi: Google ARCore (telefon / tablet AR; APK'ya ARCore SDK'sı eklenir)
+        bool ARKit = false;                   // iOS sekmesi: Apple ARKit (iPhone / iPad AR; Unity Apple ARKit XR Plug-in, Unreal Apple ARKit)
     };
 
     struct ProjectConfig

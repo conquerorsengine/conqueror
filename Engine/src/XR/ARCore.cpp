@@ -19,6 +19,9 @@
     #include <algorithm>
     #include <chrono>
     #include <cmath>
+#elif defined(CQ_PLATFORM_IOS)
+    // iPhone / iPad: aynı AR işlevleri Apple ARKit ile (Platform/iOS/ARKitSession.mm, 256)
+    #include "XR/ARKitBridge.h"
 #endif
 
 namespace Conqueror::ARCore
@@ -36,6 +39,11 @@ namespace Conqueror::ARCore
         if (const char* env = std::getenv("CQ_ARCORE"))
             return env[0] == '1';
         return Project::GetActive() && Project::GetActive()->GetConfig().XR.ARCore;
+#elif defined(CQ_PLATFORM_IOS)
+        // XR Plug-in Management > ARKit (iOS sekmesi); CQ_ARKIT=1 zorlar
+        if (const char* env = std::getenv("CQ_ARKIT"))
+            return env[0] == '1';
+        return Project::GetActive() && Project::GetActive()->GetConfig().XR.ARKit;
 #else
         return false;
 #endif
@@ -45,8 +53,30 @@ namespace Conqueror::ARCore
     const std::string& GetError() { return s_Error; }
     const std::vector<Plane>& GetPlanes() { return s_Planes; }
 
-#if !defined(__ANDROID__)
-    bool Start() { s_State = "Unavailable"; s_Error = "ARCore runs on Android phones and tablets"; return false; }
+#if defined(CQ_PLATFORM_IOS)
+    bool Start()
+    {
+        s_Planes.clear();
+        const bool ok = ARKitBridge::Start(s_State, s_Error);
+        if (!ok)
+            CQ_CORE_WARN("[ARKit] {0}", s_Error);
+        return ok;
+    }
+    void Stop()
+    {
+        ARKitBridge::Stop();
+        s_Planes.clear();
+        s_State = "Unavailable";
+    }
+    void Update() { ARKitBridge::Update(s_State, s_Error, s_Planes); }
+    bool IsRunning() { return ARKitBridge::IsRunning(); }
+    bool CameraPose(glm::vec3& position, glm::quat& rotation) { return ARKitBridge::CameraPose(position, rotation); }
+    float CameraFovY() { return ARKitBridge::CameraFovY(); }
+    bool Raycast(float pixelX, float pixelY, HitResult& out) { return ARKitBridge::Raycast(pixelX, pixelY, out); }
+    uint32_t BackgroundTexture() { return ARKitBridge::BackgroundTexture(); }
+    uint64_t FramesUpdated() { return ARKitBridge::FramesUpdated(); }
+#elif !defined(__ANDROID__)
+    bool Start() { s_State = "Unavailable"; s_Error = "ARCore runs on Android phones and tablets, ARKit on iPhone and iPad"; return false; }
     void Stop() {}
     void Update() {}
     bool IsRunning() { return false; }

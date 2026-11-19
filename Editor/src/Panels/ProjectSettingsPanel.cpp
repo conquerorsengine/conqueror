@@ -219,6 +219,10 @@ namespace Conqueror::Editor
                                 "Android phones and tablets: Google ARCore drives the AR camera (pose, field of view, camera image as the "
                                 "background), plane detection and hit tests. The Android build adds the ARCore SDK from Google Maven "
                                 "(ARCore Additional Terms of Service) and the camera permission. In the editor the AR Simulation runs.");
+        m_Dirty |= UI::Checkbox("ARKit (iOS)", xr.ARKit,
+                                "iPhone and iPad: Apple ARKit drives the AR camera (pose, field of view, camera image as the background), "
+                                "plane detection and hit tests, the same AR functions as ARCore. The iOS build writes the camera usage text "
+                                "(Player Settings > iOS > Camera Usage, a default text if empty). In the editor the AR Simulation runs.");
         UI::SubHeader("Runtime");
         static OpenXR::Status s_Checked;
         static bool s_HasCheck = false;
