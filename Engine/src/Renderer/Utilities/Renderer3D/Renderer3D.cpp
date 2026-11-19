@@ -364,6 +364,7 @@ namespace Conqueror
                 float AlphaClip = 0.5f;
                 glm::vec2 UVScale{ 1.0f }, UVOffset{ 0.0f };
                 bool SubPixel = false;           // ekranda çeyrek pikselden az kıpırdadı: eski yeri işaretlenmez
+                bool Replaced = false;           // yeni beliren / görseli değişen sprite: w = 3 (TAA geçmişi atar), eski yeri işaretlenmez
             };
             struct SkinnedVelocityDraw
             {
@@ -552,6 +553,40 @@ namespace Conqueror
             return;
         }
         AddMotionBox(center, extents);
+    }
+
+    void Renderer3D::SubmitQuadVelocity(const glm::mat4& quadCur, const glm::mat4& quadPrev, bool replaced, const std::shared_ptr<Texture2D>& cutout,
+                                        const glm::vec2& uvScale, const glm::vec2& uvOffset, float alphaClip)
+    {
+        // Sprite'lar sahne bittikten (EndScene) sonra çizilir: MarkMovingBounds gibi şu an çizilen görünümün kaydı kullanılır
+        MotionTrack* track = s_MotionCur;
+        if (!track)
+        {
+            if (!PostProcessStack::WantsMotionData())
+                return;
+            auto it = s_Motion.find(PostProcessStack::GetCurrentStack());
+            if (it == s_Motion.end())
+                return;
+            track = &it->second;
+        }
+        if (!s_PlaneMesh)
+            return;
+        MotionTrack::VelocityDraw v;
+        v.MeshRef = s_PlaneMesh;
+        v.Draw = s_PlaneMesh.get();
+        v.Cur = quadCur;
+        v.Prev = replaced ? quadCur : quadPrev;
+        v.Cull = 0;
+        v.Exact = !replaced;
+        v.Replaced = replaced;
+        if (cutout)
+        {
+            v.Cutout = cutout;
+            v.AlphaClip = alphaClip;
+            v.UVScale = uvScale;
+            v.UVOffset = uvOffset;
+        }
+        track->Velocity.push_back(std::move(v));
     }
 
     void Renderer3D::SetDrawIdentity(uint64_t identity)
@@ -909,6 +944,7 @@ namespace Conqueror
                 sh->SetMat4("u_Transform", d.Cur);
                 sh->SetMat4("u_PrevTransform", d.Prev);
                 sh->SetFloat("u_Exact", d.Exact ? 1.0f : 0.5f);
+                sh->SetInt("u_Replaced", d.Replaced ? 1 : 0);
                 // Ağaç rüzgârı: şimdiki ve önceki karenin zamanında salınan köşeler (hareket vektörü salınımı içerir)
                 sh->SetFloat4("u_TreeWind", d.Wind);
                 sh->SetFloat4("u_TreeWindParams", glm::vec4(GetWindTime(), d.WindParams.y > 0.0f ? 1.0f : 0.0f, d.WindParams.x, d.WindParams.y));
@@ -971,6 +1007,7 @@ namespace Conqueror
             auto& sh = s_VelocityShader;
             sh->Bind();
             sh->SetInt("u_PrevCoverage", 1);
+            sh->SetInt("u_Replaced", 0);
             // Önceki çizimlerin rüzgâr / alfa kesme durumu bu geçişe taşınmaz (eski yer katı siluetle işaretlenir)
             sh->SetInt("u_Cutout", 0);
             sh->SetFloat4("u_TreeWindParams", glm::vec4(0.0f));
@@ -984,6 +1021,9 @@ namespace Conqueror
                     continue;
                 // Piksel altı kıpırtı: eski yer yeni yerle örtüşür, işaretlenirse bütün silueti her karede açılan alan sayılırdı
                 if (d.SubPixel)
+                    continue;
+                // Yeni beliren sprite: önceki konumu yok (w = 3 işareti burada 2 ile ezilmesin)
+                if (d.Replaced)
                     continue;
                 sh->SetMat4("u_Transform", d.Prev);
                 sh->SetMat4("u_PrevTransform", d.Prev);

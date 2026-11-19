@@ -304,6 +304,15 @@ void main()
     }
     // Açılan alan (hareket vektörü geçişi): bu piksel hareket eden bir nesnenin önceki karedeki konumunda. Nesne ilk kez
     // kıpırdadığında eski yerindeki geçmiş (yerde yatan levha, ışınlanan nesne) burada iz bırakmasın
+    // Yeni beliren / görseli değişen sprite (hız geçişinde w = 3; Content Browser'dan bırakılan fotoğraf): bu piksellerin geçmişi
+    // başka yüzeye (arkadaki gökyüzü / zemin) ait. Sıkı kırpma yetmiyordu: kırpılan geçmiş fotoğrafın açık tonlarına yakın kalıp
+    // sonraki karelerde %96 ağırlıkla tutuluyor, fotoğraf bir saniye kadar açık / soluk görünüyordu. Geçmiş atılır, yaşı 1'den başlar
+    bool replacedNow = false;
+    if (u_HasVelocity == 1)
+    {
+        ivec2 vsz = textureSize(u_Velocity, 0);
+        replacedNow = texelFetch(u_Velocity, clamp(ivec2(v_UV * vec2(vsz)), ivec2(0), vsz - 1), 0).w > 2.5;
+    }
     if (u_HasVelocity == 1 && !movingNow)
     {
         ivec2 vsz = textureSize(u_Velocity, 0);
@@ -1009,13 +1018,15 @@ void main()
     // karede dururkenki kalitesine oturur
     if (ageBefore < 16.0)
         feedback = min(feedback, ageBefore / (ageBefore + 1.0));
-    // Yaş yalnız gerçek açılmada sıfırlanır (gökyüzü pikselinde yukarıdaki ±2 piksel koşulu kenarda açılmanın içinde)
-    bool historyOccluder = disoccluded || edgeDisoccluded || revealedPD;
+    if (replacedNow)
+        feedback = 0.0;
+    // Yaş yalnız gerçek açılmada (ve yeni beliren sprite'ta) sıfırlanır (gökyüzü pikselinde yukarıdaki ±2 piksel koşulu kenarda açılmanın içinde)
+    bool historyOccluder = disoccluded || edgeDisoccluded || revealedPD || replacedNow;
     float ageNow = historyOccluder ? 1.0 : min(ageBefore + 1.0, 16.0);
     // Titreme tutması TSAA / TSSAA'da da: pikselden ince ayrıntı (küplerin arası, uzak basamak) titreşimin yalnız bazı karelerinde
     // çizilir; kısa birikim ve standart kırpma onu ıskalanan karelerde silip yürürken yanıp söndürüyor, dururken bile aralığı
     // açıyordu. Yalnız geçmişi karede bir kutunun içinde karede bir dışında kalan (yanıp sönen) piksel kırpılmadan tutulur
-    if ((u_Variant == 1 || u_Variant == 2) && hold)
+    if ((u_Variant == 1 || u_Variant == 2) && hold && !replacedNow)
     {
         history = rawHistory;
         feedback = max(feedback, u_Variant == 2 ? 0.96 : 0.9);

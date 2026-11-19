@@ -147,6 +147,7 @@ namespace Conqueror
             glm::mat4 Transform{ 1.0f };
             glm::vec4 Look{ 0.0f };      // renk
             glm::vec4 Bounds{ 0.0f };    // yerel sınırlar (en küçük xy, en büyük xy)
+            glm::vec4 UV{ 0.0f };        // doku bölgesi (sprite sayfası karesi; animasyonda değişir)
             const void* Texture = nullptr;
             glm::vec3 Lo{ 0.0f }, Hi{ 0.0f };   // son çizimdeki dünya kutusu (silinince / gizlenince eski yeri işaretlenir)
             uint64_t Serial = 0;
@@ -205,12 +206,38 @@ namespace Conqueror
             glm::vec2 mn(-0.5f), mx(0.5f);
             Renderer2D::GetSpriteLocalBounds(sprite, mn, mx);
             const glm::vec4 bounds(mn, mx);
+            std::shared_ptr<Texture2D> drawTexture;
+            glm::vec2 uvMin(0.0f), uvMax(1.0f);
+            const bool hasUV = Renderer2D::GetSpriteUV(sprite, drawTexture, uvMin, uvMax);
+            const glm::vec4 uv(uvMin, uvMax);
             auto [it, inserted] = v.Items.try_emplace(key);
             SpriteMotionState& st = it->second;
-            bool changed = inserted || st.Serial != v.Prev || st.Texture != sprite.Texture.get() || st.Look != sprite.Color || st.Bounds != bounds;
-            for (int c = 0; c < 4 && !changed; ++c)
-                for (int r = 0; r < 4 && !changed; ++r)
-                    changed = std::abs(st.Transform[c][r] - transform[c][r]) > 1e-5f * std::max(1.0f, std::abs(transform[c][r]));
+            // Yeni yüzey: ilk kez / yeniden görünen, görseli, boyutu ya da sprite sayfası karesi değişen sprite (geçmişi başka görüntüye ait).
+            // Yalnız rengi değişen (renk animasyonu) eskisi gibi hareketli kutuyla: her karede geçmiş atılsa kenarları titrerdi
+            const bool replaced = inserted || st.Serial != v.Prev || st.Texture != sprite.Texture.get() || st.Bounds != bounds || st.UV != uv;
+            bool moved = false;
+            for (int c = 0; c < 4 && !moved; ++c)
+                for (int r = 0; r < 4 && !moved; ++r)
+                    moved = std::abs(st.Transform[c][r] - transform[c][r]) > 1e-5f * std::max(1.0f, std::abs(transform[c][r]));
+            const bool changed = replaced || moved || st.Look != sprite.Color;
+            // TAA hareket vektörü (dörtgen): taşınan sprite kendi hareketiyle yeniden izdüşülür (taşırken bulanıklaşıp durduktan sonra bir
+            // süre yumuşak kalmıyor, 273a); yeni beliren sprite'ın pikselleri yeni yüzey işaretlenir (geçmişi atılır, 272)
+            if ((replaced || moved) && hasUV)
+            {
+                // Düzlem ağı (XZ, -1..1) -> sprite'ın yerel dikdörtgeni (XY): x -> X, z -> Y
+                auto quad = [](const glm::mat4& t, const glm::vec4& b) {
+                    glm::mat4 m(0.0f);
+                    m[0] = glm::vec4(0.5f * (b.z - b.x), 0.0f, 0.0f, 0.0f);
+                    m[1] = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+                    m[2] = glm::vec4(0.0f, 0.5f * (b.w - b.y), 0.0f, 0.0f);
+                    m[3] = glm::vec4(0.5f * (b.x + b.z), 0.5f * (b.y + b.w), 0.0f, 1.0f);
+                    return t * m;
+                };
+                // Alfa kesme yalnız düz (Simple) çizimde: 9 dilimli / döşenen sprite'ın doku eşlemesi dörtgene doğrusal değil
+                const bool cut = sprite.DrawMode == SpriteDrawMode::Simple && drawTexture;
+                Renderer3D::SubmitQuadVelocity(quad(transform, bounds), quad(replaced ? transform : st.Transform, replaced ? bounds : st.Bounds), replaced,
+                                               cut ? drawTexture : nullptr, uvMax - uvMin, uvMin, 0.5f / std::max(sprite.Color.a, 1e-3f));
+            }
             if (changed)
             {
                 glm::vec3 lo(1e30f), hi(-1e30f);
@@ -227,6 +254,7 @@ namespace Conqueror
             st.Transform = transform;
             st.Look = sprite.Color;
             st.Bounds = bounds;
+            st.UV = uv;
             st.Texture = sprite.Texture.get();
             st.Serial = v.Cur;
         }

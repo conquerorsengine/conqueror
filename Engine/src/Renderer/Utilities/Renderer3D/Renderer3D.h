@@ -270,6 +270,12 @@ namespace Conqueror
         // rasterleştirilir (1 = kapalı)
         // Mesh dışı çizimler (parçacıklar vb.) için: bu dünya kutusu bu karede hareketli (TAA iz bırakmasın)
         static void MarkMovingBounds(const glm::vec3& center, const glm::vec3& extents);
+        // TAA hareket vektörü: dünya uzayında çizilen dörtgen (sprite). quadCur / quadPrev Renderer3D'nin düzlem ağını (XZ, -1..1;
+        // uv x, z ile artar) dörtgenin bu ve önceki karedeki yerine taşır. replaced: yeni beliren / görseli değişen yüzey: TAA o
+        // piksellerin eski geçmişini atıp birikime baştan başlar (eski yüzeyin rengi karışıp sönmez). cutout: doku alfası alphaClip
+        // altında kalan yer yazılmaz (uv = düzlem uv'si x uvScale + uvOffset)
+        static void SubmitQuadVelocity(const glm::mat4& quadCur, const glm::mat4& quadPrev, bool replaced, const std::shared_ptr<Texture2D>& cutout,
+                                       const glm::vec2& uvScale, const glm::vec2& uvOffset, float alphaClip);
         // TAA hareket takibi: sonraki çizimlerin kararlı nesne kimliği (varlığın UUID'si). 0 = kimlik yok (mesh + çizim sırası)
         static void SetDrawIdentity(uint64_t identity);
         static void SetFrustumCulling(bool enabled);
