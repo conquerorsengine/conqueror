@@ -8962,7 +8962,7 @@ Entities:
       ClassName: ""
     AudioListenerComponent:
       IsActive: true
-  - Entity: 2722890920312846465
+  - Entity: 2734286248110337465
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -8972,178 +8972,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
-      Layer: 5
+      Layer: 0
       OrderInLayer: 0
-    CanvasComponent:
-      RenderMode: 0
-      PixelPerfect: false
-      SortOrder: 0
-    CanvasScalerComponent:
-      ScaleMode: 1
-      ScaleFactor: 1
-      ReferencePixelsPerUnit: 100
-      ReferenceResolution: [1920, 1080]
-      MatchWidthOrHeight: 0.5
-    GraphicRaycasterComponent:
-      IgnoreReversedGraphics: true
-      BlockingObjects: 0
-      BlockingMask: 4294967295
-  - Entity: 5428564779732470721
-    TagComponent:
-      Tag: TitleText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0, 1]
-      AnchorMax: [0, 1]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [340, -44]
-      SizeDelta: [600, 60]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: CITY PLAZA
-      FontPath: ""
-      FontSize: 40
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 0
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
-  - Entity: 149608635676523601
-    TagComponent:
-      Tag: CrowdStats
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0, 1]
-      AnchorMax: [0, 1]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [640, -96]
-      SizeDelta: [1200, 34]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: PEOPLE 36
-      FontPath: ""
-      FontSize: 22
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 0
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
-  - Entity: 8512633206682065655
-    TagComponent:
-      Tag: ModeText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0.5, 0]
-      AnchorMax: [0.5, 0]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [0, 80]
-      SizeDelta: [1600, 34]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: ""
-      FontPath: ""
-      FontSize: 24
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 1
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
-  - Entity: 3978043143744328421
-    TagComponent:
-      Tag: HintText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0.5, 0]
-      AnchorMax: [0.5, 0]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [0, 26]
-      SizeDelta: [1800, 30]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: RMB DRAG ROTATE     WHEEL ZOOM     WASD PAN     F FOLLOW A PERSON (TAB NEXT)     UP / DOWN CROWD SIZE
-      FontPath: ""
-      FontSize: 22
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 1
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
+    UIWidgetComponent:
+      Widget: Assets/UI/HUD.cqwidget
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -9351,11 +9183,3 @@ EditorCamera:
   Yaw: 0.61086524
   OrthographicSize: 10
 Hierarchy:
-  - Child: 5428564779732470721
-    Parent: 2722890920312846465
-  - Child: 149608635676523601
-    Parent: 2722890920312846465
-  - Child: 8512633206682065655
-    Parent: 2722890920312846465
-  - Child: 3978043143744328421
-    Parent: 2722890920312846465

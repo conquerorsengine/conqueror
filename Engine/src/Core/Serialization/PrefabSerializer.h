@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include <filesystem>
@@ -16,10 +18,14 @@ namespace Conqueror
         static constexpr const char* Extension = ".cqprefab";
 
         // Alt ağacı prefab dosyasına yaz (kök konumu korunur)
-        static bool Serialize(Entity root, const std::filesystem::path& filepath);
+        // keepIDs: dosyaya öğelerin şimdiki kimlikleri yazılır (UI Widget; prefab'larda her kayıtta yeni kimlik)
+        static bool Serialize(Entity root, const std::filesystem::path& filepath, bool keepIDs = false);
         // Prefab'ı sahneye örnekle; parent verilirse onun altına. Kök varlığı döner (başarısızsa boş)
         static Entity Deserialize(const std::shared_ptr<Scene>& scene, const std::filesystem::path& filepath, Entity parent = {});
-        static Entity Instantiate(Scene& scene, const std::string& path, Entity parent = {});
+        // outUuidMap: dosyadaki kimlik -> sahnedeki kimlik (istenirse). keepFileIDs: öğeler dosyadaki kimliklerini alır (sahnede o kimlik
+        // boşsa; UI Widget: sahnedeki başka varlıklar onlara kimlikle bağlı olabilir)
+        static Entity Instantiate(Scene& scene, const std::string& path, Entity parent = {}, std::unordered_map<uint64_t, uint64_t>* outUuidMap = nullptr,
+                                  bool keepFileIDs = false);
 
         // Örneği kaynağına geri yaz (Apply) / kaynaktan yeniden oluştur (Revert; konum, ebeveyn ve isim korunur)
         static bool ApplyInstance(Entity instanceRoot);

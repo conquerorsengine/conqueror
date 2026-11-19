@@ -16,6 +16,8 @@
 #include <set>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace Conqueror
 {
@@ -514,7 +516,30 @@ namespace Conqueror
         } s_OverrideCheck;
     }
 
-    bool PrefabSerializer::Serialize(Entity root, const fs::path& filepath)
+    namespace
+    {
+        // Alt ağacın kimliklerini haritaya göre değiştirir (eski -> yeni), içindeki başvuruları da
+        void ReassignIDs(Scene& scene, Entity root, const std::unordered_map<uint64_t, uint64_t>& map)
+        {
+            if (map.empty())
+                return;
+            std::vector<Entity> stack{ root };
+            while (!stack.empty())
+            {
+                Entity e = stack.back();
+                stack.pop_back();
+                auto& id = e.GetComponent<IDComponent>();
+                auto it = map.find((uint64_t)id.ID);
+                if (it != map.end())
+                    id.ID = it->second;
+                for (Entity c : e.GetChildren())
+                    stack.push_back(c);
+            }
+            scene.RemapEntityReferences(root, map);
+        }
+    }
+
+    bool PrefabSerializer::Serialize(Entity root, const fs::path& filepath, bool keepIDs)
     {
         if (!root)
             return false;
@@ -523,6 +548,15 @@ namespace Conqueror
         std::unordered_map<uint64_t, uint64_t> uuidMap;
         Entity copy = temp->DuplicateEntityTree(root, "", Entity{}, &uuidMap);
         temp->RemapEntityReferences(copy, uuidMap);
+        // Kimlikler korunur (geçici sahne boş, çakışma olmaz): canvas UI Widget'a çevrilince sahnedeki Director parçaları / betik
+        // alanları öğelere eski kimlikleriyle bağlı kalır
+        if (keepIDs)
+        {
+            std::unordered_map<uint64_t, uint64_t> back;
+            for (const auto& [from, to] : uuidMap)
+                back[to] = from;
+            ReassignIDs(*temp, copy, back);
+        }
         if (root.GetParent())
         {
             auto& tc = copy.GetComponent<TransformComponent>();
@@ -559,16 +593,35 @@ namespace Conqueror
         return true;
     }
 
-    Entity PrefabSerializer::Instantiate(Scene& scene, const std::string& path, Entity parent)
+    Entity PrefabSerializer::Instantiate(Scene& scene, const std::string& path, Entity parent, std::unordered_map<uint64_t, uint64_t>* outUuidMap,
+                                         bool keepFileIDs)
     {
         fs::path resolved = Resolve(path);
         PrefabTemplate* t = LoadTemplate(resolved);
         if (!t)
             return {};
         Entity source{ t->Root, t->TemplateScene.get() };
+        std::unordered_set<uint64_t> usedBefore;
+        if (keepFileIDs)
+            for (auto e : scene.m_Registry.view<IDComponent>())
+                usedBefore.insert((uint64_t)scene.m_Registry.get<IDComponent>(e).ID);
         std::unordered_map<uint64_t, uint64_t> uuidMap;
         Entity root = scene.DuplicateEntityTree(source, "", parent, &uuidMap);
         scene.RemapEntityReferences(root, uuidMap);
+        // Dosyadaki kimlik sahnede boşsa öğe onu alır (aynı widget ikinci kez kurulursa onunkiler yeni kimlikte kalır)
+        if (keepFileIDs)
+        {
+            std::unordered_map<uint64_t, uint64_t> newToFile;
+            for (auto& [file, now] : uuidMap)
+                if (!usedBefore.count(file))
+                {
+                    newToFile[now] = file;
+                    now = file;
+                }
+            ReassignIDs(scene, root, newToFile);
+        }
+        if (outUuidMap)
+            *outUuidMap = uuidMap;
         MarkInstance(root, ToProjectPath(resolved));
         scene.UpdateWorldTransforms();
         scene.OnEntityTreeSpawned(root);

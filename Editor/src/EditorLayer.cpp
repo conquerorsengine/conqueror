@@ -22,6 +22,7 @@
 #include "LoadingScreen.h"
 #include "Panels/ModuleInstaller.h"
 #include "UI/UIWidget.h"
+#include "Timeline/TimelineSystem.h"
 #include "Panels/PaletteCategories.h"
 #include "UndoRedo/EntitySnapshotCommand.h"
 #include "Build/AndroidSigning.h"
@@ -3718,7 +3719,9 @@ namespace Conqueror::Editor
         auto stage = std::make_shared<Scene>();
         if (m_ActiveScene)
             stage->GetRenderSettings() = m_ActiveScene->GetRenderSettings();
-        Entity root = PrefabSerializer::Deserialize(stage, path);
+        // UI Widget: öğeler dosyadaki kimlikleriyle açılır ve öyle kaydedilir (sahnedeki başvurular kopmasın)
+        const bool widget = path.extension() == UIWidgets::Extension;
+        Entity root = widget ? PrefabSerializer::Instantiate(*stage, path.string(), {}, nullptr, true) : PrefabSerializer::Deserialize(stage, path);
         if (!root)
         {
             CQ_CORE_ERROR("Prefab Mode: cannot open {0}", path.string());
@@ -3777,7 +3780,7 @@ namespace Conqueror::Editor
             CQ_CORE_ERROR("Prefab Mode: the prefab root was deleted; nothing saved");
             return false;
         }
-        if (!PrefabSerializer::Serialize(root, s.Path))
+        if (!PrefabSerializer::Serialize(root, s.Path, s.Path.extension() == UIWidgets::Extension))
             return false;
         PrefabSerializer::ClearCache();
         s.SavedText = ReadWholeFile(s.Path);
@@ -8229,6 +8232,22 @@ namespace Conqueror::Editor
                 if (sub == "create") return tl.CreateTimelineFor(e, &err);
                 if (!tl.SelectDirector(e)) { err = a[2] + " has no Playable Director"; return false; }
                 return true;
+            }
+            // expect_bound <director> <varlık>: Director'ın parça bağlarından biri bu sahnede o adlı varlığa çözülüyor (199: UI Widget
+            // öğeleri oyun başında dosyadaki kimlikleriyle kurulur, sahnedeki bağlar kopmaz)
+            if (sub == "expect_bound" && a.size() > 3)
+            {
+                Entity d = findByName(a[2]);
+                if (!d || !d.HasComponent<PlayableDirectorComponent>()) { err = a[2] + " has no Playable Director"; return false; }
+                const size_t n = d.GetComponent<PlayableDirectorComponent>().Bindings.size();
+                for (size_t i = 0; i < n; ++i)
+                    if (Entity b = TimelineSystem::ResolveBinding(*m_ActiveScene, d, i); b && b.GetComponent<TagComponent>().Tag == a[3])
+                    {
+                        Automation::Report("TIMELINE " + a[2] + " binds " + a[3]);
+                        return true;
+                    }
+                err = a[2] + " has no binding that resolves to " + a[3];
+                return false;
             }
             if (sub == "add_track" && a.size() > 2)
             {

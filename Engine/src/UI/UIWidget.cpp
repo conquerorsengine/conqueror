@@ -29,7 +29,9 @@ namespace Conqueror
                     continue;
                 w.Spawned = true;
                 Entity host{ h, &scene };
-                Entity root = PrefabSerializer::Instantiate(scene, w.Widget, host);
+                // Öğeler dosyadaki kimliklerini alır: sahnedeki başka varlıklar (Director parçası, betik alanı) onlara kimlikle bağlı olabilir.
+                // Canvas sahnedeyken kurulan bu bağlar canvas widget'a taşınınca kopuyordu (shortfilm şablonunda zaman çizelgesi başlıkları canlandırıyor)
+                Entity root = PrefabSerializer::Instantiate(scene, w.Widget, host, nullptr, true);
                 if (!root)
                     CQ_CORE_ERROR("[UI Widget] {0}: cannot load {1}", host.GetComponent<TagComponent>().Tag, w.Widget);
             }
@@ -47,7 +49,7 @@ namespace Conqueror
         {
             if (!canvas || !canvas.HasComponent<CanvasComponent>())
                 return false;
-            return PrefabSerializer::Serialize(canvas, path);
+            return PrefabSerializer::Serialize(canvas, path, true);
         }
 
         void RegisterComponents()

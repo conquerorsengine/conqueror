@@ -1298,7 +1298,7 @@ Entities:
       OrderInLayer: 0
     AudioListenerComponent:
       IsActive: true
-  - Entity: 2369053982567733501
+  - Entity: 7807454984430662224
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -1308,61 +1308,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
-      Layer: 5
+      Layer: 0
       OrderInLayer: 0
-    CanvasComponent:
-      RenderMode: 0
-      PixelPerfect: false
-      SortOrder: 0
-    CanvasScalerComponent:
-      ScaleMode: 1
-      ScaleFactor: 1
-      ReferencePixelsPerUnit: 100
-      ReferenceResolution: [1920, 1080]
-      MatchWidthOrHeight: 0.5
-    GraphicRaycasterComponent:
-      IgnoreReversedGraphics: true
-      BlockingObjects: 0
-      BlockingMask: 4294967295
-  - Entity: 8052671754430264724
-    TagComponent:
-      Tag: HintText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0.5, 0]
-      AnchorMax: [0.5, 0]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [0, 26]
-      SizeDelta: [1800, 30]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: LMB CLICK / HOLD  MOVE      WASD  WALK      SHIFT  RUN      WHEEL  ZOOM
-      FontPath: ""
-      FontSize: 22
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 1
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
+    UIWidgetComponent:
+      Widget: Assets/UI/HUD.cqwidget
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -1570,7 +1519,5 @@ EditorCamera:
   Yaw: 0
   OrthographicSize: 10
 Hierarchy:
-  - Child: 8052671754430264724
-    Parent: 2369053982567733501
   - Child: 4235083793745530659
     Parent: 7755090709719956822

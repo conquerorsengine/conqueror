@@ -1,0 +1,16 @@
+# template: shortfilm
+# 199: şablonların ekran üstü canvas'ları UI Widget dosyasında (Assets/UI/*.cqwidget, Unreal'ın Widget Blueprint'i gibi); sahnede yalnız
+# UI Widget bileşenli varlık durur. Oyun başında widget kurulur ve öğeler dosyadaki kimliklerini alır: Director'ın canlandırdığı başlıklar
+# (Title, End Card, Fade) sahnedeki eski bağlarıyla bulunur. Kimlikler korunmayınca "THE LANTERN" başlığı hiç görünmüyordu
+wait 60
+focus Game
+play
+wait 60
+ui expect_rect Title w >1
+timeline expect_bound Director Title
+timeline expect_bound Director "End Card"
+timeline expect_bound Director Fade
+script_errors expect 0
+stop
+wait 5
+quit

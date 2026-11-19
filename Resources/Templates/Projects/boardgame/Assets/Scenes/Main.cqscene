@@ -814,7 +814,7 @@ Entities:
       ClassName: ""
     AudioListenerComponent:
       IsActive: true
-  - Entity: 6448822928152485085
+  - Entity: 2734286347703939232
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -824,178 +824,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
-      Layer: 5
+      Layer: 0
       OrderInLayer: 0
-    CanvasComponent:
-      RenderMode: 0
-      PixelPerfect: false
-      SortOrder: 0
-    CanvasScalerComponent:
-      ScaleMode: 1
-      ScaleFactor: 1
-      ReferencePixelsPerUnit: 100
-      ReferenceResolution: [1920, 1080]
-      MatchWidthOrHeight: 0.5
-    GraphicRaycasterComponent:
-      IgnoreReversedGraphics: true
-      BlockingObjects: 0
-      BlockingMask: 4294967295
-  - Entity: 6696780028666760952
-    TagComponent:
-      Tag: TitleText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0, 1]
-      AnchorMax: [0, 1]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [340, -44]
-      SizeDelta: [600, 60]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: HEX ISLAND
-      FontPath: ""
-      FontSize: 40
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 0
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
-  - Entity: 2369054164788132031
-    TagComponent:
-      Tag: StepsText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0, 1]
-      AnchorMax: [0, 1]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [390, -96]
-      SizeDelta: [700, 34]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: MOVES 0     ISLAND 1
-      FontPath: ""
-      FontSize: 22
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 0
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
-  - Entity: 8052671936617376180
-    TagComponent:
-      Tag: ClockText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [1, 1]
-      AnchorMax: [1, 1]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [-240, -44]
-      SizeDelta: [400, 50]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: 09:30
-      FontPath: ""
-      FontSize: 32
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 2
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
-  - Entity: 4361641552797654875
-    TagComponent:
-      Tag: HintText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0.5, 0]
-      AnchorMax: [0.5, 0]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [0, 26]
-      SizeDelta: [1800, 30]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: LMB MOVE THE KNIGHT     RMB DRAG ROTATE     WHEEL ZOOM     WASD PAN     F FOCUS     R NEW ISLAND     T TIME-LAPSE
-      FontPath: ""
-      FontSize: 22
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 1
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
+    UIWidgetComponent:
+      Widget: Assets/UI/HUD.cqwidget
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -1203,13 +1035,5 @@ EditorCamera:
   Yaw: 0.5235988
   OrthographicSize: 10
 Hierarchy:
-  - Child: 6696780028666760952
-    Parent: 6448822928152485085
-  - Child: 2369054164788132031
-    Parent: 6448822928152485085
-  - Child: 8052671936617376180
-    Parent: 6448822928152485085
-  - Child: 4361641552797654875
-    Parent: 6448822928152485085
   - Child: 3606402821035927868
     Parent: 7806088738438351091

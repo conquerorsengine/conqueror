@@ -11719,7 +11719,7 @@ Entities:
       ClassName: ""
     AudioListenerComponent:
       IsActive: true
-  - Entity: 8799917795418313304
+  - Entity: 7807454209568946907
     TagComponent:
       Tag: HUD
       GameTag: Untagged
@@ -11729,61 +11729,10 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     LayerComponent:
-      Layer: 5
+      Layer: 0
       OrderInLayer: 0
-    CanvasComponent:
-      RenderMode: 0
-      PixelPerfect: false
-      SortOrder: 0
-    CanvasScalerComponent:
-      ScaleMode: 1
-      ScaleFactor: 1
-      ReferencePixelsPerUnit: 100
-      ReferenceResolution: [1920, 1080]
-      MatchWidthOrHeight: 0.5
-    GraphicRaycasterComponent:
-      IgnoreReversedGraphics: true
-      BlockingObjects: 0
-      BlockingMask: 4294967295
-  - Entity: 6014106288443908851
-    TagComponent:
-      Tag: HintText
-      GameTag: Untagged
-      IsStatic: false
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    LayerComponent:
-      Layer: 5
-      OrderInLayer: 0
-    RectTransformComponent:
-      AnchorMin: [0.5, 0]
-      AnchorMax: [0.5, 0]
-      Pivot: [0.5, 0.5]
-      AnchoredPosition: [0, 26]
-      SizeDelta: [1800, 30]
-      Rotation: 0
-      Scale: [1, 1]
-    UITextComponent:
-      Text: RMB LOOK     WASD FLY     Q / E DOWN - UP     SHIFT FAST     WHEEL SPEED     1-9, 0 STATION     TAB NEXT STATION
-      FontPath: ""
-      FontSize: 22
-      Color: [0.96, 0.96, 0.96, 1]
-      AlignH: 1
-      AlignV: 1
-      WordWrap: false
-      BestFit: false
-      MinSize: 10
-      MaxSize: 72
-      LineSpacing: 1
-      Outline: false
-      OutlineColor: [0, 0, 0, 1]
-      Shadow: true
-      ShadowOffset: [2, -2]
-      ShadowColor: [0, 0, 0, 0.6]
-      RaycastTarget: false
-      RichText: false
+    UIWidgetComponent:
+      Widget: Assets/UI/HUD.cqwidget
 Environment:
   SkyboxExposure: 1
   SkyboxRotation: 0
@@ -12003,8 +11952,6 @@ Hierarchy:
     Parent: 8502759813242294774
   - Child: 3150106248008742646
     Parent: 193874274673090300
-  - Child: 6014106288443908851
-    Parent: 8799917795418313304
   - Child: 8502759813242294774
     Parent: 1942751958784761500
   - Child: 1212264424997205877
