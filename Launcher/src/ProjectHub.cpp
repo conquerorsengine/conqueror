@@ -725,7 +725,7 @@ namespace Conqueror::Editor
         ImVec2 b(a.x + width, a.y + height);
         const bool clicked = ImGui::InvisibleButton("##card", ImVec2(width, height));
         const bool hovered = ImGui::IsItemHovered();
-        // 284: kartın yol / ipucu kutusu ancak fare kartın üstünde 1 saniye kalınca çıkar (kartların üstünden geçerken hemen açılıp
+        // 284: kartın yol / ipucu kutusu ancak fare kartın üstünde 0.6 saniye kalınca çıkar (kartların üstünden geçerken hemen açılıp
         // kapanıyordu); başka karta geçince süre yeniden başlar
         const double now = ImGui::GetTime();
         if (hovered && m_TipCard != index)
