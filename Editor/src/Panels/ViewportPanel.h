@@ -223,6 +223,9 @@ namespace Conqueror::Editor
         bool m_PickPending = false;
         ImVec2 m_PickStart{ 0.0f, 0.0f };
         bool m_ImageHovered = false;
+        // Görüntünün çizildiği andaki seçim (277): bu karede sahne çizildikten sonra seçim değiştiyse (bırakılan / oluşturulan / silinen
+        // nesne) görüntü aynı karede yeniden çizilir; yoksa yeni nesnenin gizmosu bir kare boyunca nesnenin kendisi olmadan görünüyordu
+        uint64_t m_RenderedSelectionKey = 0;
         bool m_MouseDownInView[3] = { false, false, false };
         std::vector<uint32_t> m_PrevSelection;
         // Create menüsünden sürüklenen girişin önizlemesi (yerleştirilene kadar geri alma kaydına girmez)

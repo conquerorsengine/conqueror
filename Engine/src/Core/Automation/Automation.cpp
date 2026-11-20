@@ -64,6 +64,11 @@ namespace Conqueror
             ImVec2 MousePos = { 0.0f, 0.0f };
             bool HasMousePos = false;
             std::string PendingScreenshot;
+            // screenshot_frames <önek> <n>: sonraki n karenin her biri <önek>_<i>.png (komut akışını bekletmez; sürükle-bırak
+            // gibi girdilerin tam o karesini görmek için)
+            std::string ShotSequencePrefix;
+            int ShotSequenceLeft = 0;
+            int ShotSequenceIndex = 0;
             struct PendingFrameCheck
             {
                 std::string Label;
@@ -344,6 +349,14 @@ namespace Conqueror
             if (cmd == "sleep")
             {
                 st.SleepUntil = std::chrono::steady_clock::now() + std::chrono::milliseconds((int)argf(1, 100));
+                return true;
+            }
+            if (cmd == "screenshot_frames")
+            {
+                if (t.size() < 3) { error = "screenshot_frames <prefix> <count>"; return false; }
+                st.ShotSequencePrefix = t[1];
+                st.ShotSequenceLeft = std::max(1, (int)argf(2, 1));
+                st.ShotSequenceIndex = 0;
                 return true;
             }
             if (cmd == "screenshot")
@@ -1000,6 +1013,16 @@ namespace Conqueror
             }
             else
                 ++it;
+        }
+        if (st.ShotSequenceLeft > 0)
+        {
+            const std::string shot = st.ShotSequencePrefix + "_" + std::to_string(st.ShotSequenceIndex++) + ".png";
+            if (!CaptureBackbuffer(shot, framebufferWidth, framebufferHeight))
+            {
+                Report("FAIL screenshot " + shot);
+                ++st.Failures;
+            }
+            --st.ShotSequenceLeft;
         }
         if (st.PendingScreenshot.empty())
             return;

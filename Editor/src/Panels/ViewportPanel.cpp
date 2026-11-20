@@ -176,8 +176,17 @@ namespace Conqueror::Editor
 
     // Sahneyi görünümün boyutunda çiz. updateScene = false: yalnız çizim (panel boyutu ImGui karesinde değişince aynı karede yeni boyutta
     // yeniden çizilir; düzenleyici sistemleri ikinci kez ilerlemez)
+    static uint64_t SelectionKey()
+    {
+        uint64_t key = 1469598103934665603ull;
+        for (const Entity& e : EditorState::Get().GetSelectedEntities())
+            key = (key ^ (uint64_t)(uint32_t)(entt::entity)e) * 1099511628211ull;
+        return key ^ EditorState::Get().GetSelectionCount();
+    }
+
     void ViewportPanel::RenderView(Timestep ts, bool updateScene)
     {
+        m_RenderedSelectionKey = SelectionKey();
         const uint32_t width = static_cast<uint32_t>(m_ViewportSize.x);
         const uint32_t height = static_cast<uint32_t>(m_ViewportSize.y);
 
@@ -468,6 +477,10 @@ namespace Conqueror::Editor
             // Sürükleme görünümden çıktı ya da bırakılmadan bitti: önizleme kaldırılır (Unreal'de de görünümden çıkınca kaybolur)
             if (!m_PlaceRoots.empty() && ImGui::GetFrameCount() - m_PlaceSeenFrame > 1)
                 ClearPlacementPreview(true);
+            // 277: sahne bu karede çizildikten sonra seçim değiştiyse (İçerik Tarayıcısından bırakılan fotoğraf / model, menüden
+            // oluşturulan, kopyalanan ya da silinen nesne) görüntü aynı karede yeniden çizilir: gizmo ile nesne aynı karede görünür
+            if (SelectionKey() != m_RenderedSelectionKey)
+                RenderView(Timestep(0.0f), false);
         }
         else
         {

@@ -1,0 +1,16 @@
+# template: basic3d
+# 277: İçerik Tarayıcısından Viewport'a bırakılan fotoğraf, gizmosu ve seçim çizgisiyle AYNI karede görünür. Eskiden sahne o karede
+# bırakmadan önce çizildiği için bir kare boyunca gri ızgaranın üstünde yalnız gizmo görünüyor, fotoğraf bir sonraki karede geliyordu.
+# Bırakmadan sonraki her karede, nesne seçiliyken Viewport ortası renkli olmalı (ızgara doygunluğu ~8, fotoğraf ~100)
+wait 40
+camera 8 20 0 0 1 0
+content_drop "{dir}/assets/photo/colors.png"
+wait 20
+select_asset "Assets/colors.png"
+move 987 900
+wait 2
+viewport_selected_saturation 60 >40
+drag 987 900 920 600 30
+wait 20
+expect_entities 1 colors
+quit

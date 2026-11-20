@@ -8797,6 +8797,43 @@ namespace Conqueror::Editor
         Automation::RegisterCommand("game_shown", [this, shownCheck](const Args& a, std::string& err) {
             return shownCheck(a, err, [this]() -> const glm::vec2* { return m_GamePanel ? m_GamePanel->GetImageBounds() : nullptr; }, "game_shown");
         });
+        // viewport_selected_saturation <kare> <>v|<v> [u0 v0 u1 v1]: sonraki N karede bir nesne seçiliyken EKRANDA görünen Viewport
+        // bölgesinin renk doygunluğu ortalaması (max(r,g,b) - min(r,g,b)) koşulu sağlamalı. Bırakılan fotoğrafın gizmosu ile aynı karede
+        // görünmesini denetler (277: gizmo bir kare boyunca fotoğrafsız, gri ızgaranın üstünde görünüyordu)
+        Automation::RegisterCommand("viewport_selected_saturation", [this](const Args& a, std::string& err) {
+            if (a.size() < 3 || a[2].size() < 2 || (a[2][0] != '>' && a[2][0] != '<')) { err = "viewport_selected_saturation <frames> <>v|<v> [u0 v0 u1 v1]"; return false; }
+            const int frames = std::stoi(a[1]);
+            const bool greater = a[2][0] == '>';
+            const float limit = std::stof(a[2].substr(1));
+            float u0 = 0.35f, v0 = 0.25f, u1 = 0.65f, v1 = 0.75f;
+            if (a.size() >= 7) { u0 = std::stof(a[3]); v0 = std::stof(a[4]); u1 = std::stof(a[5]); v1 = std::stof(a[6]); }
+            Automation::AddFrameCheck("viewport_selected_saturation " + a[2], frames, [=](uint32_t fbw, uint32_t fbh, std::string& e) {
+                if (!EditorState::Get().HasSelection())
+                    return true;
+                const glm::vec2* b = m_ViewportPanel ? m_ViewportPanel->GetViewportBounds() : nullptr;
+                if (!b || b[1].x <= b[0].x || b[1].y <= b[0].y) { e = "no image"; return false; }
+                const ImGuiIO& io = ImGui::GetIO();
+                const ImVec2 origin = ImGui::GetMainViewport()->Pos;
+                const float sx = io.DisplayFramebufferScale.x, sy = io.DisplayFramebufferScale.y;
+                const float w = b[1].x - b[0].x, h = b[1].y - b[0].y;
+                const int x0 = std::clamp((int)std::lround((b[0].x + w * u0 - origin.x) * sx), 0, (int)fbw - 1);
+                const int x1 = std::clamp((int)std::lround((b[0].x + w * u1 - origin.x) * sx), 0, (int)fbw - 1);
+                const int y0 = std::clamp((int)std::lround((b[0].y + h * v0 - origin.y) * sy), 0, (int)fbh - 1);
+                const int y1 = std::clamp((int)std::lround((b[0].y + h * v1 - origin.y) * sy), 0, (int)fbh - 1);
+                const int rw = std::max(1, x1 - x0), rh = std::max(1, y1 - y0);
+                std::vector<uint8_t> rgba;
+                Automation::ReadBackbufferRegion(x0, (int)fbh - (y0 + rh), rw, rh, rgba);
+                double sum = 0.0;
+                for (size_t i = 0; i < rgba.size(); i += 4)
+                    sum += std::max({ rgba[i], rgba[i + 1], rgba[i + 2] }) - std::min({ rgba[i], rgba[i + 1], rgba[i + 2] });
+                const double mean = sum / std::max<size_t>(1, rgba.size() / 4);
+                if (greater ? mean > limit : mean < limit)
+                    return true;
+                e = "selected, viewport saturation is " + std::to_string(mean);
+                return false;
+            });
+            return true;
+        });
         // stats_ready: Stats başlığında FPS sayısı görünüyor mu (wait_until ile: açılıştan kaç kare sonra göründüğü)
         // loading_screen [expect <en az çizim sayısı>]: proje açılırken yükleme penceresi kaç kez çizildi, son yüzde (270)
         // Ayrıca: ayrı açılış penceresiydi, başlık çubuğu (düğmeleri) yoktu, editör penceresi yüklerken gizliydi, şimdi kapalı
