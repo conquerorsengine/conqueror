@@ -57,6 +57,12 @@ namespace Conqueror
         // Dünya uzayı canvas'ları (ve editörde ekran üstü olanları sahne içinde) çiz
         static void RenderWorldSpace(Scene& scene, const glm::mat4& viewProjection, bool includeOverlayCanvases, const glm::vec2& editorScreenSize);
         // Editör: ekran üstü canvas'ları sahne görünümünde ızgaradan sonra çiz (ızgara UI'yi örtmesin)
+        // 274 / 294: Viewport'ta (3D) "Screen UI in Scene" kenar yumuşatma ve ton eşlemeden sonra çizilir (Game görünümündeki gibi
+        // son görüntünün üstüne; 273b'deki ızgara gibi): sahne geçişi canvas'ları erteler, Viewport son işlemden sonra sahnenin
+        // derinliğini kendi tamponuna kopyalayıp RenderDeferredEditorOverlay ile çizer
+        static void DeferEditorOverlayCanvases(Scene& scene, const glm::mat4& viewProjection, const glm::vec2& editorScreenSize);
+        static bool HasDeferredEditorOverlay();
+        static void RenderDeferredEditorOverlay();
         static void RenderEditorOverlayCanvases(Scene& scene, const glm::mat4& viewProjection, const glm::vec2& editorScreenSize,
                                                 bool depthTest = false);
         // Editör: yerleşimi hesapla ve UI varlıklarının WorldTransform'unu sahne görünümü için ayarla

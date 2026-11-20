@@ -245,7 +245,15 @@ def run_case_inner(case, env=None):
             if code != 0:
                 return False, f"hub exit code {code}", time.time() - start
             return True, "", time.time() - start
-    project = make_project(tid, name, env)
+    # "# sample-project: <örnek>": betik şablon projesi yerine Samples/<örnek> kopyasında çalışır (ör. Parkour menüsü, 274)
+    msp = re.search(r"^#\s*sample-project:\s*(\S+)", text, re.M)
+    if msp:
+        target = os.path.join(WORK, name)
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+        project = sample_project(msp.group(1), name)
+    else:
+        project = make_project(tid, name, env)
     if not project:
         return False, f"hub could not create a '{tid}' project", time.time() - start
     # Editör kendini yeniden başlatan testler (303 Open Project): "# second-project: <örnek>" o örneğin kopyası ({project2}),

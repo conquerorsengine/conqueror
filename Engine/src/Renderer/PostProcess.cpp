@@ -1323,6 +1323,15 @@ namespace Conqueror
         return m_SceneFramebuffer ? m_SceneFramebuffer->GetDepthAttachmentRendererID() : 0;
     }
 
+    void PostProcessStack::CopySceneDepthTo(uint32_t framebuffer, uint32_t width, uint32_t height) const
+    {
+        const uint32_t source = (m_Samples > 1 && m_ResolvedFramebuffer) ? m_ResolvedFramebuffer->GetRendererID()
+                              : (m_SceneFramebuffer ? m_SceneFramebuffer->GetRendererID() : 0u);
+        if (!source || !framebuffer || !m_Width || !m_Height)
+            return;
+        glBlitNamedFramebuffer(source, framebuffer, 0, 0, (GLint)m_Width, (GLint)m_Height, 0, 0, (GLint)width, (GLint)height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    }
+
     void PostProcessStack::RunSSAO(const PostProcessSettings& settings, const RenderCamera& camera, float time)
     {
         CQ_PROFILE_GPU("SSAO");

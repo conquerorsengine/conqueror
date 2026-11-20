@@ -2776,12 +2776,18 @@ namespace Conqueror
             // tasarlanır; dünya uzayı canvas'lar sahnede kalır. Eski davranış için View > Screen UI in Scene
             if (m_EditorViewOptions.UI && m_EditorViewOptions.ScreenUIInScene)
             {
-                Renderer2D::Flush();
+                // 3D: kenar yumuşatmadan sonra son görüntünün üstüne (Viewport çizer, 274 / 294); 2D: sahneyle birlikte
+                if (!camera.Is2D())
+                    UISystem::DeferEditorOverlayCanvases(*this, camera.GetViewProjection(), m_UIScreenSize);
+                else
                 {
-                    CQ_PROFILE_SAMPLE("Render.EditorCanvases", UI);
-                    UISystem::RenderEditorOverlayCanvases(*this, camera.GetViewProjection(), m_UIScreenSize, !camera.Is2D());
+                    Renderer2D::Flush();
+                    {
+                        CQ_PROFILE_SAMPLE("Render.EditorCanvases", UI);
+                        UISystem::RenderEditorOverlayCanvases(*this, camera.GetViewProjection(), m_UIScreenSize, false);
+                    }
+                    Renderer2D::BeginScene(camera, true);
                 }
-                Renderer2D::BeginScene(camera, true);
             }
         }
 

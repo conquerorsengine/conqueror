@@ -351,6 +351,18 @@ namespace Conqueror::Editor
                                        m_PostStack.GetSceneDepthTexture());
         }
 
+        // 4b. Screen UI in Scene (274 / 294): kenar yumuşatma ve ton eşlemeden sonra (Game görünümündeki gibi); sahne derinliği bu tampona
+        // kopyalanır, canvas önündeki nesnelerin arkasında kalır
+        if (m_Context && UISystem::HasDeferredEditorOverlay())
+        {
+            const auto& spec = m_Framebuffer->GetSpecification();
+            const uint32_t w = std::min(width, spec.Width), h = std::min(height, spec.Height);
+            m_PostStack.CopySceneDepthTo(m_Framebuffer->GetRendererID(), w, h);
+            m_Framebuffer->Bind();
+            RenderCommand::SetViewport(0, 0, w, h);
+            UISystem::RenderDeferredEditorOverlay();
+        }
+
         // 5. Işık / kamera simgeleri son görüntünün üstüne (Unity gibi): TAA'ya girmez, büyürken / dönerken iz bırakmaz
         if (m_Context)
         {

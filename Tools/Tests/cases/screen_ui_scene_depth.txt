@@ -2,7 +2,8 @@
 # 274: View > Screen UI in Scene açıkken tuvalin tamamını kaplayan yarı saydam karartma (Parkour menüsündeki %35'lik MenuRoot) sahne
 # derinliğine tuvalin düzlemini yazıyordu; TAA arkadaki binaları bu derinlikle geri izlediği için kamera dönerken onlar parçalanıp
 # bulaşıyordu. Yalnız opak UI pikselleri derinlik yazar: karartmanın ve %90 opak koyu panelin (menü düğmeleri) arkasındaki küpün
-# derinliği UI kapalıykenkiyle aynı kalmalı, tam opak düğmenin olduğu yerde ise tuval derinliği yazılmalı (gizmo / sonra çizilenler için)
+# derinliği UI kapalıykenkiyle aynı kalmalı. 274 (ikinci düzeltme): Screen UI artık son işlemden sonra çizildiği için tam opak düğmenin
+# olduğu yerde de sahne derinliği (TAA'nın geri izlediği) değişmez; tuval Viewport'un kendi derinliğiyle nesnelerin arkasında kalır
 wait 30
 create_primitive Cube Far 0 20 -60
 entity scale Far 80 80 4
@@ -44,5 +45,5 @@ wait 20
 viewport_depth 0.5 0.27 mark
 view_option screen_ui on
 wait 20
-viewport_depth 0.5 0.27 expect_diff 0.00005
+viewport_depth 0.5 0.27 expect_same 0.00005
 quit

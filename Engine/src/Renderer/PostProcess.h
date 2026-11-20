@@ -45,6 +45,9 @@ namespace Conqueror
 
         uint32_t GetSceneColorTexture() const;
         uint32_t GetSceneDepthTexture() const;
+        // Sahne derinliğini başka bir çerçeve tamponunun derinlik ekine kopyalar (boyut farklıysa en yakın örnek; 274: Viewport'ta son
+        // görüntünün üstüne çizilen Screen UI nesnelerin arkasında kalsın)
+        void CopySceneDepthTo(uint32_t framebuffer, uint32_t width, uint32_t height) const;
         uint32_t GetAOTexture() const { return m_AOBlur.Texture; }
         uint32_t GetBloomTexture() const { return m_BloomMips.empty() ? 0 : m_BloomMips[0].Texture; }
         uint32_t GetWidth() const { return m_Width; }

@@ -3060,6 +3060,49 @@ namespace Conqueror
         RenderCanvasesInWorld(scene, viewProjection, true, includeOverlay, editorScreenSize);
     }
 
+    namespace
+    {
+        struct DeferredOverlay
+        {
+            Scene* SceneRef = nullptr;
+            glm::mat4 ViewProjection{ 1.0f };
+            glm::vec2 ScreenSize{ 0.0f };
+            bool Pending = false;
+        };
+        DeferredOverlay& Deferred()
+        {
+            static DeferredOverlay d;
+            return d;
+        }
+    }
+
+    // 274: canvas sahneyle birlikte sahne hedefine (TAA / SMAA'nın Temporal Stability'si / FSR 2 ... öncesine) çiziliyordu: yarı saydam
+    // panellerin pikseli panel + arkadaki bina karışımıydı, zamansal yöntemler onu binanın derinliği ve hareketiyle geri izliyordu; kamera
+    // hareket ederken koyu düğmelerin arkasındaki binalar bulaşıyordu (durunca düzeliyordu). Ayrıca ton eşleme / pozlama / bloom UI renklerini
+    // değiştiriyordu. 294: seçenek açılıp kapanınca geçmiş UI'sız kalıyor, ilk karelerde paneller saydam, yazılar bozuk görünüyordu
+    void UISystem::DeferEditorOverlayCanvases(Scene& scene, const glm::mat4& viewProjection, const glm::vec2& editorScreenSize)
+    {
+        DeferredOverlay& d = Deferred();
+        d.SceneRef = &scene;
+        d.ViewProjection = viewProjection;
+        d.ScreenSize = editorScreenSize;
+        d.Pending = true;
+    }
+
+    bool UISystem::HasDeferredEditorOverlay()
+    {
+        return Deferred().Pending && Deferred().SceneRef;
+    }
+
+    void UISystem::RenderDeferredEditorOverlay()
+    {
+        DeferredOverlay& d = Deferred();
+        if (!d.Pending || !d.SceneRef)
+            return;
+        d.Pending = false;
+        RenderCanvasesInWorld(*d.SceneRef, d.ViewProjection, false, true, d.ScreenSize, true);
+    }
+
     void UISystem::RenderEditorOverlayCanvases(Scene& scene, const glm::mat4& viewProjection, const glm::vec2& editorScreenSize, bool depthTest)
     {
         RenderCanvasesInWorld(scene, viewProjection, false, true, editorScreenSize, depthTest);
