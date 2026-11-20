@@ -1480,11 +1480,11 @@ namespace Conqueror
 
     // TAA hareket keskinliği: kamera hareket ederken TAA keskinleştirmesine eklenen miktar (Sharpen.cqsh, 0..1)
     static constexpr float kTAAMotionSharpen = 0.6f;
-    // NIS keskinliği Upscaling Sharpness'ın 0.75 katı. Eskiden yarısıydı ve çıktının tamamı FXAA'dan geçiyordu: TAA + NIS (67%) yerel
-    // çözünürlüğün ayrıntısının yalnız %72-82'sini gösteriyordu (286). Şimdi %80-92; tam keskinlik (%86-101) duran görüntüde TAA'nın kalan
-    // titreşimini doğal TAA'nın üstüne büyütüyordu (>16 seviye %0.033, 0.75'te %0.016, doğal TAA %0.026). Basamaklar (149) yalnız geometri
-    // kenarlarına uygulanan FXAA ile yumuşatılır
-    static constexpr float kNISSharpnessScale = 0.75f;
+    // NIS keskinliği = Upscaling Sharpness (varsayılan 0.5, NVIDIA'nın varsayılanı). TAA + NIS (67%) yerel çözünürlüğün ayrıntısının
+    // %100 / 95 / 85'ini gösterir (zemin / küpler / merdiven; 286'da hâlâ bulanık bulundu: 0.75 katında %91 / 90 / 80). Tam keskinlik
+    // eskiden TAA'nın kalan titreşimini büyütüyordu; NIS'ten önce TAA çıktısındaki tutucuyla duran görüntüde >16 seviye %0.013 (doğal TAA
+    // %0.026). Basamaklar (149) yalnız geometri kenarlarına uygulanan FXAA ile yumuşatılır
+    static constexpr float kNISSharpnessScale = 1.0f;
     // FSR AA + NIS: FSR 2'nin çıktısı TAA'nınkinden keskin (tam keskinlikte doğal çözünürlüğün ayrıntısının %107'si, aşırı); yarı keskinlik
     // hem doğal ayrıntıya denk gelir hem FSR 2'nin kalan titreşimini daha az büyütür (fsraa_flicker)
     static constexpr float kNISSharpnessScaleFSR = 0.5f;
