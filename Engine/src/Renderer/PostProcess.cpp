@@ -2057,7 +2057,9 @@ namespace Conqueror
                 sharpen->Bind();
                 sharpen->SetInt("u_ScreenTexture", 0);
                 sharpen->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / (float)outW, 1.0f / (float)outH));
-                sharpen->SetFloat("u_Amount", std::min((nativeFSR ? settings.TAASharpness : 0.0f) + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
+                // FSR AA'da duran görüntüye TAA Sharpness eklenmez (288): FSR 2'nin kendi çıktısı SSAA'dan keskin (zemin dokusu ayrıntısı %132,
+                // TAA %115); üstüne eklenen keskinlik merdivenlerin doku çizgilerini çift / kumlu gösteriyordu (%139). Hareket ederken artış kalır
+                sharpen->SetFloat("u_Amount", std::min((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f, 1.0f));
                 sharpen->SetInt("u_HasMotionState", (nativeFSR && !m_CameraStill) ? 2 : 0);
                 sharpen->SetFloat("u_MotionAmount", kTAAMotionSharpen);
                 BindTexture(0, fsrResult);
