@@ -63,8 +63,9 @@ Tutorial hints appear until you finish the course once.
 | Path                               | Contents                                                     |
 |------------------------------------|--------------------------------------------------------------|
 | `Assets/Scenes/Menu.cqscene`       | Level select (start scene)                                   |
-| `Assets/Scenes/Main.cqscene`       | Skyline 4, the original course: level, lighting, player, cameras and UI |
+| `Assets/Scenes/Main.cqscene`       | Skyline 4, the original course: level, lighting, player and cameras |
 | `Assets/Scenes/<World><N>.cqscene` | The other 23 levels                                          |
+| `Assets/UI/HUD.cqwidget`, `Menu.cqwidget` | The levels' shared HUD (title, pause, finish) and the level select (UI Editor) |
 | `Assets/Scripts/Player.cqs`        | First-person controller (all movement mechanics, camera, sounds) |
 | `Assets/Scripts/ParkourGame.cqs`   | Game flow: title, countdown, timer, checkpoints, respawn, pause, finish, medals |
 | `Assets/Scripts/ParkourMenu.cqs`   | Level select: categories, unlocks, best times and medals     |

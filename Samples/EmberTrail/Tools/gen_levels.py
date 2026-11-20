@@ -397,14 +397,15 @@ def main():
             fp.write(level_builder(scene, title, world, lv, demo, ticks / 60.0, nxt, n))
         with open(os.path.join(OUT, scene + ".txt"), "w") as fp:
             fp.write("\n".join(rows) + "\n")
+        # HUD bütün bölümlerde aynı Assets/UI/HUD.cqwidget (Unreal Widget Blueprint gibi)
         auto += ["new_scene", f'run_cqs_file "{path}"', "wait 3", "entity expect_active BuildSceneDone true", "entity delete BuildSceneDone",
-                 f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", scene + ".cqscene")}"']
+                 'uieditor save_widget HUD Assets/UI/HUD.cqwidget', f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", scene + ".cqscene")}"']
         print(f"{scene:8s} {title:16s} {lv.w:3d} cols  solution {ticks / 60.0:5.2f}s  embers {len(lv.embers)}  shards {len(lv.shards)}")
     path = os.path.join(OUT, "Menu.cqs")
     with open(path, "w", encoding="utf-8") as fp:
         fp.write(menu_builder(levels))
     auto += ["new_scene", f'run_cqs_file "{path}"', "wait 3", "entity expect_active BuildSceneDone true", "entity delete BuildSceneDone",
-             f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", "Menu.cqscene")}"', "quit"]
+             'uieditor save_widget MenuCanvas Assets/UI/Menu.cqwidget', f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", "Menu.cqscene")}"', "quit"]
     with open(os.path.join(OUT, "build_levels.txt"), "w") as fp:
         fp.write("\n".join(auto) + "\n")
     with open(CACHE, "w") as fp:

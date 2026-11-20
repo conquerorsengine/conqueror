@@ -35,7 +35,8 @@ Open `Tetris.cqproj` in the editor and press **Play**, or build it from **Build 
 
 | Path                           | Contents                                                    |
 |--------------------------------|-------------------------------------------------------------|
-| `Assets/Scenes/Main.cqscene`   | The game scene (camera, board, UI, effects, game object)    |
+| `Assets/Scenes/Main.cqscene`   | The game scene (camera, board, effects, game object)        |
+| `Assets/UI/HUD.cqwidget`       | HUD, title, pause and game over screens (UI Editor)         |
 | `Assets/Scripts/TetrisGame.cqs`| All game logic (state machine, rules, scoring, UI, audio)   |
 | `Assets/Textures`, `Audio`, `Music`, `Fonts` | Game assets                                   |
 | `Tools/BuildScene.cqs`         | Script that generated `Main.cqscene`                        |

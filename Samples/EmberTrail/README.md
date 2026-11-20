@@ -56,6 +56,7 @@ scenes in the editor with `CQ_AUTOMATION=Tools/Levels/build_levels.txt`.
 |-----------------------------------|----------------------------------------------------------------|
 | `Assets/Scenes/Menu.cqscene`      | Title screen and level select (start scene)                     |
 | `Assets/Scenes/<World><N>.cqscene`| The six levels                                                 |
+| `Assets/UI/HUD.cqwidget`, `Menu.cqwidget` | The levels' shared HUD (pause, results) and the menu (UI Editor) |
 | `Assets/Scripts/EmberGame.cqs`    | Level: simulation, input, animation, camera, HUD, pause, results |
 | `Assets/Scripts/EmberMenu.cqs`    | Level select, unlocks, records                                 |
 | `Tools/gen_assets.py`             | Generates every texture, sound effect and music track           |

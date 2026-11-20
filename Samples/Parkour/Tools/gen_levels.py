@@ -844,14 +844,15 @@ def main():
                sec["Oyuncu"].rstrip() + "\n", post_player(t), game_fields(fields), "\n",
                sec["Arayüz"]]
         out = "".join(src)
-        out = out.replace('Txt("TitleSub", title, "SKYLINE RUN"', f'Txt("TitleSub", title, "{name}"')
-        out = out.replace('Txt("CheckpointText", hud, "0 / 3"', f'Txt("CheckpointText", hud, "0 / {course.cp}"')
+        # HUD bütün bölümlerde aynı Assets/UI/HUD.cqwidget (Unreal Widget Blueprint gibi); bölüm adını ve kontrol noktası sayısını
+        # ParkourGame.cqs oyun başlarken yazar
         scene = scene_name(cat, i)
         path = os.path.join(OUT, scene + ".cqs")
         with open(path, "w", encoding="utf-8") as fp:
             fp.write(out)
         auto += ["new_scene", f'run_cqs_file "{path}"', "wait 3", "entity expect_active BuildSceneDone true",
-                 "entity delete BuildSceneDone", "material_bake Assets/Materials", f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", scene + ".cqscene")}"']
+                 "entity delete BuildSceneDone", "material_bake Assets/Materials", 'uieditor save_widget HUD Assets/UI/HUD.cqwidget',
+                 f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", scene + ".cqscene")}"']
         summary.append(f"{scene:12s} {name:16s} cp={course.cp} len={length:.0f} gold={gold}")
     data = ";".join(THEMES[c]["title"] + ":" + ",".join(
         f"{scene_name(c, i)}|{level_id(c, i)}|{(LEVELS[c][i] or ('SKYLINE RUN',))[0]}" for i in range(4)) for c in CATEGORIES)
@@ -859,7 +860,8 @@ def main():
     with open(path, "w", encoding="utf-8") as fp:
         fp.write(build_menu(head, sec, data))
     auto += ["new_scene", f'run_cqs_file "{path}"', "wait 3", "entity expect_active BuildSceneDone true",
-             "entity delete BuildSceneDone", "material_bake Assets/Materials", f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", "Menu.cqscene")}"']
+             "entity delete BuildSceneDone", "material_bake Assets/Materials", 'uieditor save_widget MenuCanvas Assets/UI/Menu.cqwidget',
+             f'save_scene_as "{os.path.join(ROOT, "Assets", "Scenes", "Menu.cqscene")}"']
     auto.append("quit")
     with open(os.path.join(OUT, "build_levels.txt"), "w", encoding="utf-8") as fp:
         fp.write("\n".join(auto) + "\n")
