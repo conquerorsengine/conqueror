@@ -7666,6 +7666,20 @@ namespace Conqueror::Editor
             if (!ok) { err = "the material preview was not drawn (is a .cqmat selected?)"; return false; }
             if (a.size() >= 3 && a[1] == "save")
                 return WriteProjectThumbnail(MaterialPreview::LastTexture(), 256, 256, a[2], 256, 256);
+            // mark | expect_same [tol]: önizleme kareden kareye aynı mı (300: açık sahneyle ortam haritasını paylaşırken yanıp sönüyordu)
+            static float s_Marked[3] = { -1.0f, -1.0f, -1.0f };
+            if (a.size() >= 2 && a[1] == "mark")
+            {
+                std::copy(rgb, rgb + 3, s_Marked);
+                return true;
+            }
+            if (a.size() >= 2 && a[1] == "expect_same")
+            {
+                const float tol = a.size() > 2 ? std::stof(a[2]) : 0.002f;
+                for (int c = 0; c < 3; ++c)
+                    if (std::abs(rgb[c] - s_Marked[c]) > tol) { err = "the preview changed since mark"; return false; }
+                return true;
+            }
             // dominant <r|g|b>: o kanal diğer ikisinden en az 0.1 büyük (ışık / ton eşlemeden bağımsız renk sınaması)
             if (a.size() >= 3 && a[1] == "dominant")
             {

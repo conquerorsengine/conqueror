@@ -1,3 +1,4 @@
+#include <functional>
 #include "Core/Time/TimeManager.h"
 #include "Renderer3D.h"
 #include "ClusterMesh.h"
@@ -138,6 +139,20 @@ namespace Conqueror
             bool EnvIsProcedural = false;
             ProceduralSkySettings LastSky;
             std::chrono::steady_clock::time_point LastProceduralUpdate{};
+            // 300: üretilmiş ortam haritaları gökyüzü başına (prosedürel ayar ya da skybox dokusu). Tek yuvayken ayrı gökyüzü isteyen
+            // sahneler (Inspector'daki malzeme önizlemesi + açık sahne) haritayı saniyede 8 kez baştan üretip birbirine kaptırıyordu;
+            // önizleme küresi iki gökyüzünün aydınlatması arasında gidip gelip yanıp sönüyordu
+            struct EnvCacheEntry
+            {
+                bool Procedural = false;
+                ProceduralSkySettings Sky;
+                std::weak_ptr<Cubemap> Skybox;
+                uint32_t SkyboxID = 0;
+                std::shared_ptr<EnvironmentMap> Map;
+                uint64_t LastUse = 0;
+            };
+            std::vector<EnvCacheEntry> EnvCache;
+            uint64_t EnvCacheTick = 0;
 
             // Geriye uyumluluk
             std::shared_ptr<Texture2D> GlobalLightmap;
@@ -305,6 +320,7 @@ namespace Conqueror
             if (s->DecalDepthTex) glDeleteTextures(1, &s->DecalDepthTex);
             if (s->DecalDepthFBO) glDeleteFramebuffers(1, &s->DecalDepthFBO);
             s->EnvMap.reset();
+            s->EnvCache.clear();
             delete s;
             s = nullptr;
         }
@@ -1255,14 +1271,43 @@ namespace Conqueror
         if (!wantSkyIBL && !env.Skybox)
             return; // eski haritayı koru (yansımalar için), maliyet yok
 
+        // Önbellekten kullan (yoksa nullptr); en uzun süredir kullanılmayan atılır (en çok 4 gökyüzü)
+        auto useCached = [](const std::function<bool(const State::EnvCacheEntry&)>& match) -> std::shared_ptr<EnvironmentMap> {
+            for (auto& e : s->EnvCache)
+                if (e.Map && match(e))
+                {
+                    e.LastUse = ++s->EnvCacheTick;
+                    return e.Map;
+                }
+            return nullptr;
+        };
+        auto store = [](State::EnvCacheEntry entry) {
+            entry.LastUse = ++s->EnvCacheTick;
+            if (s->EnvCache.size() >= 4)
+                s->EnvCache.erase(std::min_element(s->EnvCache.begin(), s->EnvCache.end(),
+                                                   [](const auto& a, const auto& b) { return a.LastUse < b.LastUse; }));
+            s->EnvCache.push_back(std::move(entry));
+        };
+
         if (env.Skybox && env.Skybox->GetRendererID() != 0)
         {
             auto cached = s->CachedSkybox.lock();
             if (!s->EnvMap || s->EnvIsProcedural || cached != env.Skybox || s->CachedSkyboxID != env.Skybox->GetRendererID())
             {
-                s->EnvMap = EnvironmentMap::FromCubemap(env.Skybox->GetRendererID(), std::max(env.Skybox->GetWidth(), 64u));
+                const uint32_t id = env.Skybox->GetRendererID();
+                auto map = useCached([&](const State::EnvCacheEntry& e) { return !e.Procedural && e.SkyboxID == id && e.Skybox.lock() == env.Skybox; });
+                if (!map)
+                {
+                    map = EnvironmentMap::FromCubemap(id, std::max(env.Skybox->GetWidth(), 64u));
+                    State::EnvCacheEntry entry;
+                    entry.Skybox = env.Skybox;
+                    entry.SkyboxID = id;
+                    entry.Map = map;
+                    store(std::move(entry));
+                }
+                s->EnvMap = map;
                 s->CachedSkybox = env.Skybox;
-                s->CachedSkyboxID = env.Skybox->GetRendererID();
+                s->CachedSkyboxID = id;
                 s->EnvIsProcedural = false;
                 s->FrameDirty = true;
             }
@@ -1294,12 +1339,29 @@ namespace Conqueror
 
         auto now = std::chrono::steady_clock::now();
         bool changed = !s->EnvMap || !s->EnvIsProcedural || !(sky == s->LastSky);
+        if (!changed)
+            return;
+        // Bu gökyüzü daha önce üretildiyse (başka sahne araya girdi): bekletmeden aynı harita
+        if (auto map = useCached([&](const State::EnvCacheEntry& e) { return e.Procedural && e.Sky == sky; }))
+        {
+            s->EnvMap = map;
+            s->EnvIsProcedural = true;
+            s->LastSky = sky;
+            s->CachedSkybox.reset();
+            s->FrameDirty = true;
+            return;
+        }
         bool throttled = std::chrono::duration<float>(now - s->LastProceduralUpdate).count() < 0.125f;
-        if (changed && (!throttled || !s->EnvMap || !s->EnvIsProcedural))
+        if (!throttled || !s->EnvMap || !s->EnvIsProcedural)
         {
             auto map = EnvironmentMap::FromProceduralSky(sky, sky.Physical ? 256u : 128u);
             if (map)
             {
+                State::EnvCacheEntry entry;
+                entry.Procedural = true;
+                entry.Sky = sky;
+                entry.Map = map;
+                store(std::move(entry));
                 s->EnvMap = map;
                 s->EnvIsProcedural = true;
                 s->LastSky = sky;

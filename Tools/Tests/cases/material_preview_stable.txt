@@ -1,0 +1,21 @@
+# template: fps
+# 300: Inspector'daki malzeme önizleme küresi hafifçe yanıp sönüyordu: önizleme sahnesinin prosedürel gökyüzü ile açık sahnenin
+# gökyüzü tek bir ortam haritası yuvasını paylaşıyor, harita saniyede 8 kez baştan üretilip ikisi arasında gidip geliyordu (küre iki
+# aydınlatma arasında, en çok 7 seviye). Şimdi üretilen haritalar gökyüzü başına önbellekte; önizleme kareden kareye aynı kalmalı
+wait 40
+select_asset Assets/Materials/Plywood.cqmat
+wait 40
+material_preview mark
+wait 1
+material_preview expect_same
+wait 2
+material_preview expect_same
+wait 3
+material_preview expect_same
+wait 5
+material_preview expect_same
+wait 8
+material_preview expect_same
+wait 13
+material_preview expect_same
+quit
