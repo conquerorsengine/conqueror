@@ -229,7 +229,31 @@ namespace Conqueror::Editor
         CQ_CORE_INFO("[Hub] {0} projects, {1} editor install(s), config {2}", m_Projects.size(), m_Installs.size(), m_ConfigFile.string());
     }
 
-    Texture2D* ProjectHub::TemplateThumbnail(const std::string& id)
+    Texture2D* ProjectHub::TemplateThumbnail(const std::string& id, bool now)
+    {
+        auto it = m_TemplateThumbs.find(id);
+        if (it != m_TemplateThumbs.end())
+            return it->second.get();
+        return now ? LoadTemplateThumbnail(id) : nullptr;
+    }
+
+    void ProjectHub::PumpTemplateThumbnails()
+    {
+        if (m_TemplateThumbsReady)
+            return;
+        const auto start = std::chrono::steady_clock::now();
+        for (const auto& t : GetTemplates())
+        {
+            if (m_TemplateThumbs.count(t.Id))
+                continue;
+            LoadTemplateThumbnail(t.Id);
+            if (std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count() > 4.0)
+                return;
+        }
+        m_TemplateThumbsReady = true;
+    }
+
+    Texture2D* ProjectHub::LoadTemplateThumbnail(const std::string& id)
     {
         auto it = m_TemplateThumbs.find(id);
         if (it == m_TemplateThumbs.end())
@@ -489,6 +513,7 @@ namespace Conqueror::Editor
     void ProjectHub::OnImGuiRender()
     {
         PollInstalls();
+        PumpTemplateThumbnails();
         if (!m_PointerMoved)
         {
             const ImGuiIO& io = ImGui::GetIO();
@@ -928,8 +953,8 @@ namespace Conqueror::Editor
             ImVec2 a = ImGui::GetCursorScreenPos();
             // Seçili şablon: 16:9 büyük görsel
             const float artW = ImGui::GetContentRegionAvail().x;
-            const float artH = TemplateThumbnail(t->Id) ? std::round(artW * 9.0f / 16.0f) : 120.0f;
-            DrawTemplateArt(dl, a, ImVec2(a.x + artW, a.y + artH), *t, 4.0f, TemplateThumbnail(t->Id));
+            const float artH = TemplateThumbnail(t->Id, true) ? std::round(artW * 9.0f / 16.0f) : 120.0f;
+            DrawTemplateArt(dl, a, ImVec2(a.x + artW, a.y + artH), *t, 4.0f, TemplateThumbnail(t->Id, true));
             ImGui::Dummy(ImVec2(0, artH + 8.0f));
             ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 1.3f);
             ImGui::TextUnformatted(t->Name.c_str());

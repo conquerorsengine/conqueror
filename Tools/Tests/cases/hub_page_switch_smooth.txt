@@ -1,0 +1,27 @@
+# hub
+# 293: Projects'ten New Project'e ilk geçişte Hub kısa bir an donuyordu: 16 şablon küçük resmi aynı karede diskten okunup çözülüyordu
+# (en uzun kare 85 ms). Şimdi Hub açıldığından itibaren her karede ~4 ms bütçeyle yüklenir. Açılış ve her sayfanın ilk açılışı
+# kare süresini aşmamalı (sınır 40 ms; başsız 60 Hz'de kare 16.7 ms)
+wait 3
+frame_time mark
+wait 30
+frame_time expect_max 40
+hub page projects
+wait 20
+frame_time mark
+hub page new
+wait 15
+frame_time expect_max 40
+frame_time mark
+hub page learn
+wait 15
+frame_time expect_max 40
+frame_time mark
+hub page addons
+wait 15
+frame_time expect_max 40
+frame_time mark
+hub page settings
+wait 15
+frame_time expect_max 40
+quit

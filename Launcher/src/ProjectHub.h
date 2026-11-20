@@ -177,7 +177,14 @@ namespace Conqueror::Editor
         bool m_InstallsStatusError = false;
 
         // Şablon kart resimleri: Resources/Templates/Thumbnails/<id>.jpg (Tools/Templates/make_thumbnails.py), yoksa degrade + ikon
-        Texture2D* TemplateThumbnail(const std::string& id);
+        // now=false: henüz yüklenmediyse nullptr (PumpTemplateThumbnails karelere bölerek yükler); now=true: hemen yükle (seçili şablonun
+        // ayrıntı görseli, tek resim)
+        Texture2D* TemplateThumbnail(const std::string& id, bool now = false);
+        Texture2D* LoadTemplateThumbnail(const std::string& id);
+        // 293: şablon küçük resimleri Hub açıldığından itibaren her karede ~4 ms bütçeyle yüklenir (New Project sayfasına ilk geçişte
+        // 16 resim aynı karede çözülüp 85 ms donuyordu)
+        void PumpTemplateThumbnails();
+        bool m_TemplateThumbsReady = false;
         std::unordered_map<std::string, std::shared_ptr<Texture2D>> m_TemplateThumbs;
     };
 }

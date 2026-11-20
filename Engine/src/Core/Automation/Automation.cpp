@@ -53,6 +53,9 @@ namespace Conqueror
 
         struct AutomationState
         {
+            // frame_time: işaretten sonraki en uzun kare (duvar saati, kare başından kare başına; 293 Hub sayfa geçişi donması)
+            std::chrono::steady_clock::time_point LastFrameStart{};
+            double LongestFrameMs = 0.0;
             bool Active = false;
             bool QuitRequested = false;
             std::string ScriptPath;
@@ -338,6 +341,23 @@ namespace Conqueror
                 handled = true;
                 // Sonuç (OK/FAIL) koşul çözülünce yazılır
                 return true;
+            }
+            if (cmd == "frame_time")
+            {
+                // frame_time mark | expect_max <ms>: işaretten bu yana en uzun kare süresi (donma / takılma testleri)
+                if (t.size() >= 2 && t[1] == "mark")
+                {
+                    st.LongestFrameMs = 0.0;
+                    return true;
+                }
+                if (t.size() >= 3 && t[1] == "expect_max")
+                {
+                    Automation::Report("FRAME_TIME longest " + std::to_string(st.LongestFrameMs) + " ms");
+                    if (st.LongestFrameMs > argf(2, 100.0f)) { error = "longest frame " + std::to_string((int)st.LongestFrameMs) + " ms"; return false; }
+                    return true;
+                }
+                error = "frame_time mark | expect_max <ms>";
+                return false;
             }
             if (cmd == "stall")
             {
@@ -807,6 +827,12 @@ namespace Conqueror
         if (!st.Active)
             return;
         ++st.Frame;
+        {
+            const auto now = std::chrono::steady_clock::now();
+            if (st.LastFrameStart.time_since_epoch().count() != 0)
+                st.LongestFrameMs = std::max(st.LongestFrameMs, std::chrono::duration<double, std::milli>(now - st.LastFrameStart).count());
+            st.LastFrameStart = now;
+        }
         // gamepad tap: birkaç kare sonra bırak
         for (auto it = st.PadReleases.begin(); it != st.PadReleases.end();)
         {
