@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "Core/Base/Base.h"
 #include "Core/Base/Base.h"
 #include "Core/Base/Window.h"
@@ -60,6 +63,14 @@ namespace Conqueror
 
         static Application& Get() { return *s_Instance; }
         static bool Exists() { return s_Instance != nullptr; }
+
+        // Uygulama kapandıktan sonra main'in yerine başlatacağı süreç (yürütülebilir dosya + argümanlar). Editör "Open Project" /
+        // "New Project"te kendini yeni projeyle yeniden açar (Unity, Unreal ve Godot gibi): aynı süreçte proje değiştirmek eski
+        // projenin durumunu (Prefab Mode'un sakladığı sahne, arama metni, önbellekler) taşıyordu (303). Boş: yeniden başlatma yok
+        static void SetRelaunch(std::vector<std::string> command);
+        static const std::vector<std::string>& GetRelaunch();
+        // main çağırır: istenmişse süreci yeni komutla değiştirir (POSIX execv / Windows _wexecv); başarılıysa dönmez
+        static void RunRelaunch();
 
         const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 

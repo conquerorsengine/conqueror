@@ -31,6 +31,8 @@ int main(int argc, char** argv)
     auto app = Conqueror::CreateApplication({ argc, argv });
     app->Run();
     delete app;
+    // Open Project / New Project: editör kendini yeni projeyle yeniden açar (303); başarılıysa buradan dönülmez
+    Conqueror::Application::RunRelaunch();
     // Eşzamansız günlüğün kuyruğu dosyaya yazılsın (yoksa kapanıştan önceki son satırlar kayboluyordu)
     Conqueror::Log::Shutdown();
 

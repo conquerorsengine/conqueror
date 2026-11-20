@@ -248,16 +248,35 @@ def run_case_inner(case, env=None):
     project = make_project(tid, name, env)
     if not project:
         return False, f"hub could not create a '{tid}' project", time.time() - start
+    # Editör kendini yeniden başlatan testler (303 Open Project): "# second-project: <örnek>" o örneğin kopyası ({project2}),
+    # "#@relaunch" satırından sonrası yeniden başlayan süreçte çalışan ikinci betik (CQ_RELAUNCH_AUTOMATION); ikisi de bitmeli
+    second = None
+    m2 = re.search(r"^#\s*second-project:\s*(\S+)", text, re.M)
+    if m2:
+        target = os.path.join(WORK, name + "_2")
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+        text = text.replace("{project2}", sample_project(m2.group(1), name + "_2"))
+    if "\n#@relaunch\n" in text:
+        text, relaunch = text.split("\n#@relaunch\n", 1)
+        second = os.path.join(WORK, f"_{name}_relaunch.txt")
+        with open(second, "w", encoding="utf-8") as f:
+            f.write(relaunch)
+        if os.path.exists(second + ".result.txt"):
+            os.remove(second + ".result.txt")
+        env = dict(env or os.environ, CQ_RELAUNCH_AUTOMATION=second)
     script = os.path.join(WORK, f"_{name}.txt")
     with open(script, "w", encoding="utf-8") as f:
         f.write(text)
     code, result = run_editor(script, project, env)
+    if second:
+        result += "\n" + (open(second + ".result.txt").read() if os.path.exists(second + ".result.txt") else "")
     fails = [l for l in result.splitlines() if " FAIL " in l or l.startswith("FAIL")]
-    done = re.search(r"DONE failures=(\d+)", result)
-    if not done:
-        return False, "automation did not finish (crash or timeout)", time.time() - start
-    if int(done.group(1)) != 0:
-        return False, "; ".join(fails)[:300] or f"{done.group(1)} failures", time.time() - start
+    dones = re.findall(r"DONE failures=(\d+)", result)
+    if len(dones) < (2 if second else 1):
+        return False, "automation did not finish (crash or timeout)" + (" in the restarted editor" if second and dones else ""), time.time() - start
+    if any(int(d) != 0 for d in dones):
+        return False, "; ".join(fails)[:300] or f"{sum(int(d) for d in dones)} failures", time.time() - start
     if code != 0:
         return False, f"editor exit code {code} (crash at shutdown?)", time.time() - start
     for cmd in re.findall(r"^#\s*check:\s*(.+)$", text, re.M):

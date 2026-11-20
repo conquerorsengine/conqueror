@@ -12,6 +12,15 @@
 #include "Renderer/GraphicsAPIs/OpenGL/GLProfile.h"
 #include "Scene/CameraRenderTarget.h"
 #include <cstring>
+#include <cstdlib>
+#include <filesystem>
+#include <string>
+#include <vector>
+#if defined(_WIN32)
+    #include <process.h>
+#else
+    #include <unistd.h>
+#endif
 #include "Application.h"
 #if defined(__EMSCRIPTEN__)
     #include <emscripten/emscripten.h>
@@ -55,6 +64,77 @@ namespace Conqueror
     }
 
     Application* Application::s_Instance = nullptr;
+
+    namespace
+    {
+        std::vector<std::string>& RelaunchCommand()
+        {
+            static std::vector<std::string> s_Command;
+            return s_Command;
+        }
+    }
+
+    void Application::SetRelaunch(std::vector<std::string> command)
+    {
+        RelaunchCommand() = std::move(command);
+    }
+
+    const std::vector<std::string>& Application::GetRelaunch()
+    {
+        return RelaunchCommand();
+    }
+
+    void Application::RunRelaunch()
+    {
+        const std::vector<std::string> command = RelaunchCommand();
+        if (command.empty())
+            return;
+        // Otomasyon betiği yeni sürece taşınmaz (aynı betik yeniden çalışıp projeyi yine açardı); testler ikinci süreç için
+        // CQ_RELAUNCH_AUTOMATION ile ayrı bir betik verebilir
+        const char* next = std::getenv("CQ_RELAUNCH_AUTOMATION");
+        const char* current = std::getenv("CQ_AUTOMATION");
+        if (current && *current && !(next && *next))
+        {
+            CQ_CORE_INFO("Relaunch skipped (automation without CQ_RELAUNCH_AUTOMATION)");
+            return;
+        }
+#if defined(_WIN32)
+        _putenv_s("CQ_AUTOMATION", next ? next : "");
+        _putenv_s("CQ_RELAUNCH_AUTOMATION", "");
+#else
+        if (next && *next)
+            setenv("CQ_AUTOMATION", next, 1);
+        else
+            unsetenv("CQ_AUTOMATION");
+        unsetenv("CQ_RELAUNCH_AUTOMATION");
+#endif
+        std::string joined;
+        for (const auto& a : command)
+            joined += (joined.empty() ? "" : " ") + ("\"" + a + "\"");
+        CQ_CORE_INFO("Relaunching: {0}", joined);
+        Log::FlushAll();
+#if defined(_WIN32)
+        std::vector<std::wstring> wide;
+        for (const auto& a : command)
+        {
+            // _wexecv argümanları birleştirip yeniden ayırır: boşluklu yollar tırnaklanır
+            std::wstring w = std::filesystem::path(a).wstring();
+            wide.push_back(w.find(L' ') != std::wstring::npos ? L"\"" + w + L"\"" : w);
+        }
+        std::vector<const wchar_t*> argv;
+        for (const auto& w : wide)
+            argv.push_back(w.c_str());
+        argv.push_back(nullptr);
+        _wexecv(std::filesystem::path(command[0]).wstring().c_str(), argv.data());
+#elif !defined(CQ_PLATFORM_WEB) && !defined(CQ_PLATFORM_IOS) && !defined(CQ_PLATFORM_ANDROID) && !defined(CQ_PLATFORM_OHOS)
+        std::vector<char*> argv;
+        for (const auto& a : command)
+            argv.push_back(const_cast<char*>(a.c_str()));
+        argv.push_back(nullptr);
+        execv(command[0].c_str(), argv.data());
+#endif
+        CQ_CORE_ERROR("Relaunch failed: {0}", joined);
+    }
 
     Application::Application(const ApplicationSpecification& specification)
         : m_Specification(specification)

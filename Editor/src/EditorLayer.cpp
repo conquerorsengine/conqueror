@@ -1624,14 +1624,11 @@ namespace Conqueror::Editor
                     std::filesystem::create_directories(projectPath / "Assets" / "Audio");
                     std::filesystem::create_directories(projectPath / "Packages");
 
+                    // Yeni projenin sahnesi boş bir sahnedir (eskiden açık sahne, önceki projenin içeriğiyle, oraya yazılıyordu)
                     std::filesystem::path scenePath = projectPath / "Assets" / "Scenes" / "Scene.cqscene";
-                    SceneSerializer sceneSerializer(m_ActiveScene);
-                    if (m_ViewportPanel)
-                    {
-                        sceneSerializer.SetEditorCamera(&m_ViewportPanel->GetEditorCamera());
-                    }
+                    auto newScene = std::make_shared<Scene>();
+                    SceneSerializer sceneSerializer(newScene);
                     sceneSerializer.Serialize(scenePath);
-                    m_CurrentScenePath = scenePath;
 
                     auto project = std::make_shared<Project>();
                     project->SetProjectDirectory(projectPath);
@@ -1645,23 +1642,10 @@ namespace Conqueror::Editor
                     ProjectSerializer projectSerializer(project);
                     projectSerializer.Serialize(projectFilePath);
 
-                    Project::SetActive(project);
-                    m_EditorScene = m_ActiveScene;
-                    
-                    // Bağlamları güncelle
-                    if (m_HierarchyPanel) m_HierarchyPanel->SetContext(m_ActiveScene);
-                    if (m_InspectorPanel) m_InspectorPanel->SetContext(m_ActiveScene.get());
-                    if (m_ViewportPanel) m_ViewportPanel->SetContext(m_ActiveScene);
-                    if (m_GamePanel) m_GamePanel->SetContext(m_ActiveScene);
-                    if (m_LightingPanel) m_LightingPanel->SetContext(m_ActiveScene);
-                    if (m_ProjectSettingsPanel) m_ProjectSettingsPanel->SetContext(m_ActiveScene);
-                    if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
-                    if (m_ShaderEditorPanel) m_ShaderEditorPanel->SetContext(m_ActiveScene.get());
-                    if (m_AIPanel) m_AIPanel->SetContext(m_ActiveScene);
-                    if (m_ContentBrowserPanel) m_ContentBrowserPanel->RefreshContext();
-
+                    // 303: editör yeni projeyle yeniden başlar (aynı süreçte geçiş eski projenin durumunu taşıyordu)
                     CQ_CORE_INFO("New project created at: {0}", projectPath.string());
                     ImGui::CloseCurrentPopup();
+                    RequestProjectSwitch(projectPath);
                 }
             }
             ImGui::SameLine();
@@ -4536,6 +4520,7 @@ namespace Conqueror::Editor
         {
             m_PendingAction = PendingSceneAction::None;
             m_PendingOpenScene.clear();
+            Application::SetRelaunch({});   // 303: kapanış iptal edildi, başka projeye geçiş de
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -7886,6 +7871,17 @@ namespace Conqueror::Editor
                 cb.ShowResults((op == "refs" ? "References to " : "Dependencies of ") + p.filename().string(), list);
                 return true;
             }
+            // search <metin> | expect_search_empty: İçerik Tarayıcısı'nın arama kutusu (302: başka projeye geçince taşınmamalı)
+            if (op == "search" && a.size() > 2)
+            {
+                cb.SetSearch(a[2]);
+                return true;
+            }
+            if (op == "expect_search_empty")
+            {
+                if (cb.GetSearch()[0] != '\0') { err = std::string("search box is '") + cb.GetSearch() + "'"; return false; }
+                return true;
+            }
             if (op == "expect_results" && a.size() > 2)
             {
                 const int want = std::atoi(a[2].c_str());
@@ -8961,6 +8957,17 @@ namespace Conqueror::Editor
             m_AutomationClosePrompt = a[1] == "on";
             return true;
         });
+        // open_project <proje klasörü>: File > Open Project (303) — kapanış akışı ve yeni projeyle yeniden başlatma isteği. Aynı karede
+        // Prefab Mode'un kapandığı ve istenen komutun bu proje olduğu denetlenir (süreç kapanınca betiğin kalanı çalışmaz)
+        Automation::RegisterCommand("open_project", [this](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "open_project <project dir>"; return false; }
+            RequestProjectSwitch(a[1]);
+            if (m_PrefabStage.Active) { err = "Prefab Mode is still open"; return false; }
+            const auto& cmd = Application::GetRelaunch();
+            if (cmd.size() != 2 || std::filesystem::path(cmd[1]) != std::filesystem::path(a[1])) { err = "no restart with the project was requested"; return false; }
+            Automation::Report("RELAUNCH " + cmd[0] + " " + cmd[1]);
+            return true;
+        });
         Automation::RegisterCommand("window_close", [](const Args&, std::string&) {
             Application::Get().Close(false);
             return true;
@@ -9692,46 +9699,31 @@ namespace Conqueror::Editor
             auto project = std::make_shared<Project>();
             ProjectSerializer serializer(project);
             if (serializer.Deserialize(outPath))
-            {
-                Project::SetActive(project);
-                
-                // Load the StartScene automatically
-                std::filesystem::path projectPath = project->GetProjectDirectory();
-                std::filesystem::path startScenePath = projectPath / project->GetConfig().StartScene;
-                
-                if (std::filesystem::exists(startScenePath))
-                {
-                    m_ActiveScene = std::make_shared<Scene>();
-                    SceneSerializer sceneSerializer(m_ActiveScene);
-                    if (m_ViewportPanel)
-                    {
-                        sceneSerializer.SetEditorCamera(&m_ViewportPanel->GetEditorCamera());
-                    }
-                    if (sceneSerializer.Deserialize(startScenePath))
-                    {
-                        m_CurrentScenePath = startScenePath;
-                        m_EditorScene = m_ActiveScene;
-                        
-                        // Update context panels
-                        if (m_HierarchyPanel) m_HierarchyPanel->SetContext(m_ActiveScene);
-                        if (m_InspectorPanel) m_InspectorPanel->SetContext(m_ActiveScene.get());
-                        if (m_ViewportPanel) m_ViewportPanel->SetContext(m_ActiveScene);
-                        if (m_GamePanel) m_GamePanel->SetContext(m_ActiveScene);
-                        if (m_LightingPanel) m_LightingPanel->SetContext(m_ActiveScene);
-                        if (m_ProjectSettingsPanel) m_ProjectSettingsPanel->SetContext(m_ActiveScene);
-                        if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
-                        if (m_ContentBrowserPanel) m_ContentBrowserPanel->RefreshContext();
-                    }
-                }
-                
-                CQ_CORE_INFO("Project opened: {0}", outPath);
-            }
+                RequestProjectSwitch(project->GetProjectDirectory());
             else
-            {
                 CQ_CORE_ERROR("Failed to open project: {0}", outPath);
-            }
             NFD_FreePathU8(outPath);
         }
+    }
+
+    void EditorLayer::RequestProjectSwitch(const std::filesystem::path& projectDir)
+    {
+        // Eskiden proje aynı süreçte değişiyordu: açık Prefab Mode kapanmıyor, Play'e basınca (Prefab Mode kapanırken) önceki
+        // projenin sakladığı sahne geri yükleniyordu (EmberTrail'den Tetris'e geçince Tetris'te EmberTrail'in Menu sahnesi
+        // oynuyordu); İçerik Tarayıcısı'nın araması, açık kod sekmeleri, önbellekler de taşınıyordu (302). Unity, Unreal ve Godot
+        // proje açarken editörü yeniden başlatır: önce normal kapanış (Prefab Mode kaydedilir, kaydedilmemiş sahne sorulur), sonra
+        // main yeni projeyle yeniden açar. Soru iptal edilirse geçiş de iptal olur
+        if (!EditorState::Get().IsEditing())
+            OnStopButtonPressed();
+        const std::string exe = FileSystem::GetExecutablePath();
+        if (exe.empty())
+        {
+            CQ_CORE_ERROR("Open Project: cannot find the editor executable to restart with {0}", projectDir.string());
+            return;
+        }
+        CQ_CORE_INFO("Opening project {0}: the editor restarts", projectDir.string());
+        Application::SetRelaunch({ exe, projectDir.string() });
+        Application::Get().Close(false);
     }
 
     void EditorLayer::SaveProject()

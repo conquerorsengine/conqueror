@@ -1,0 +1,27 @@
+# template: fps
+# second-project: Tetris
+# 303: File > Open Project projeyi aynı süreçte değiştiriyordu; açık Prefab Mode kapanmıyor, Play'e basınca (Prefab Mode kapanırken)
+# önceki projenin sakladığı sahne geri yükleniyordu (EmberTrail'den Tetris'e geçince Tetris'te EmberTrail'in Menu sahnesi oynuyordu).
+# 302: İçerik Tarayıcısı'nın araması yeni projeye taşınıyordu. Şimdi editör Unity / Unreal / Godot gibi yeni projeyle yeniden başlar:
+# Prefab Mode kaydedilip kapanır, süreç yeni projeyle açılır (ikinci betik #@relaunch'tan sonra yeniden başlayan editörde çalışır)
+wait 40
+uieditor open_widget Assets/UI/HUD.cqwidget
+wait 10
+content search men
+wait 5
+open_project {project2}
+wait 30
+quit
+#@relaunch
+timeout 300
+wait 60
+content expect_search_empty
+focus Game
+play
+wait 90
+expect_entities 1 Playfield
+expect_entities 0 Player
+script_errors expect 0
+stop
+wait 5
+quit

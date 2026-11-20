@@ -179,6 +179,9 @@ namespace Conqueror::Editor
         // Project operations
         void NewProject();
         void OpenProject();
+        // 303: başka projeye geçiş = editör kapanış akışı (Prefab Mode kaydedilip kapanır, kaydedilmemiş sahne sorulur) ve yeni
+        // projeyle yeniden başlatma (Unity / Unreal / Godot gibi). Aynı süreçte geçiş eski projenin durumunu taşıyordu
+        void RequestProjectSwitch(const std::filesystem::path& projectDir);
         void SaveProject();
         
         // Viewport kamera durumunu al
