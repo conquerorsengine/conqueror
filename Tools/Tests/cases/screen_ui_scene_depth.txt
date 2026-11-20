@@ -1,8 +1,8 @@
 # template: basic3d
 # 274: View > Screen UI in Scene açıkken tuvalin tamamını kaplayan yarı saydam karartma (Parkour menüsündeki %35'lik MenuRoot) sahne
 # derinliğine tuvalin düzlemini yazıyordu; TAA arkadaki binaları bu derinlikle geri izlediği için kamera dönerken onlar parçalanıp
-# bulaşıyordu. Yalnız çoğunlukla opak UI pikselleri derinlik yazar: karartmanın arkasındaki küpün derinliği UI kapalıykenkiyle aynı
-# kalmalı, opak düğmenin olduğu yerde ise tuval derinliği yazılmalı (gizmo / sonra çizilenler için)
+# bulaşıyordu. Yalnız opak UI pikselleri derinlik yazar: karartmanın ve %90 opak koyu panelin (menü düğmeleri) arkasındaki küpün
+# derinliği UI kapalıykenkiyle aynı kalmalı, tam opak düğmenin olduğu yerde ise tuval derinliği yazılmalı (gizmo / sonra çizilenler için)
 wait 30
 create_primitive Cube Far 0 20 -60
 entity scale Far 80 80 4
@@ -14,7 +14,11 @@ comp set Dim UIImageComponent Color 0 0 0 0.35
 uieditor add Image 960 300
 entity rename Image Solid
 comp set Solid RectTransformComponent SizeDelta 300 200
-comp set Solid UIImageComponent Color 0.1 0.1 0.2 0.95
+comp set Solid UIImageComponent Color 0.1 0.1 0.2 1
+uieditor add Image 500 650
+entity rename Image Panel
+comp set Panel RectTransformComponent SizeDelta 300 200
+comp set Panel UIImageComponent Color 0.08 0.1 0.2 0.9
 comp set HUD TransformComponent Position 0 20 0
 comp set HUD TransformComponent Rotation 0 0 0
 focus Viewport
@@ -29,6 +33,12 @@ view_option screen_ui on
 wait 20
 screenshot {work}/screen_ui_depth_on.png
 viewport_depth 0.5 0.6 expect_same 0.00005
+view_option screen_ui off
+wait 20
+viewport_depth 0.26 0.6 mark
+view_option screen_ui on
+wait 20
+viewport_depth 0.26 0.6 expect_same 0.00005
 view_option screen_ui off
 wait 20
 viewport_depth 0.5 0.27 mark

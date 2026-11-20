@@ -2880,6 +2880,10 @@ namespace Conqueror::Editor
             
             // Active scene'i runtime'a çevir
             m_ActiveScene = m_RuntimeScene;
+            // 274: Viewport başka bir sahneyi (oyun kopyası, başlarken oluşan UI Widget öğeleri) göstermeye başlar: bütün kenar
+            // yumuşatma yöntemlerinin zamansal geçmişi sıfırlanır (yoksa eski görüntü bir süre üstte kalıyordu)
+            if (m_ViewportPanel)
+                m_ViewportPanel->GetPostProcessStack().ResetTemporalHistory();
             SceneManager::Reset();
             SceneManager::SetActiveScenePath(m_CurrentScenePath);
             
@@ -2976,6 +2980,10 @@ namespace Conqueror::Editor
             
             // Editor scene'e geri dön
             m_ActiveScene = m_EditorScene;
+            // 274: oyun durunca oyunda oluşan menü / HUD öğeleri silinir; Viewport'un zamansal geçmişi (TAA, FSR 2, TAAU ... hepsi)
+            // sıfırlanır, yoksa menünün soluk izi bir an Viewport'ta kalıyordu
+            if (m_ViewportPanel)
+                m_ViewportPanel->GetPostProcessStack().ResetTemporalHistory();
             // Oyunda betiğin seçtiği dil ve dile göre yüklenen karşılık dokular geri alınır (düzenleyici asıl dosyaları gösterir)
             Localization::SetRemapsActive(false);
             Localization::SetLocale(std::string());
