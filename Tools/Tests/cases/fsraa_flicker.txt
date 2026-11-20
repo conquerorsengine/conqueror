@@ -18,6 +18,13 @@ cvar r.Upscaler 3
 wait 90
 game_flicker 120 0.0 0.3 0.55 0.95 max8% 1.0 max% 0.1
 wait 125
+# 288: TAA + FSR 2 yükseltici (iç çözünürlük %67): merdiven basamakları ve zemin çizgileri FSR 2'nin 18 karelik titreşim döngüsüyle
+# 10-15 seviye sıçrıyordu (>8 seviye %0.98, TAAU %0.03); ince boşluk tutucu artık FSR 2 yükseltmede de çalışır
+cvar r.AntiAliasing 3
+cvar r.Upscaler 10
+wait 150
+game_flicker 120 0.0 0.3 0.55 0.95 max8% 0.3 max% 0.08
+wait 125
 script_errors expect 0
 stop
 quit

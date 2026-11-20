@@ -1984,7 +1984,9 @@ namespace Conqueror
                 // geçiş yalnız durumu yeniler
                 uint32_t fsrResult = m_FSR2Output.Texture;
                 auto hold = PostProcess::GetShader("FSR2Hold");
-                if (nativeFSR && Valid(hold))
+                // FSR 2 yükseltmede de (TAA + FSR 2, 288): iç çözünürlükten büyütürken merdiven basamakları ve zemin çizgileri 18 karelik
+                // titreşim döngüsüyle 10-15 seviye sıçrıyordu (duran görüntüde >8 seviye %0.98, TAAU %0.03)
+                if (Valid(hold))
                 {
                     // Kamera dururken derinlik kenarlarında (ince boşluk, merdiven) FSR 2 çıktısının yavaş ortalaması: FSR 2 piksel altı boşlukta
                     // geçmişi tutup atarak 8 kareye yakın basamaklarla 30-70 seviye sıçrıyordu (FSR AA + NIS'te yavaş yanıp sönme). Işık
@@ -2009,6 +2011,8 @@ namespace Conqueror
                     hold->SetInt("u_Motion", 3);
                     hold->SetInt("u_Reactive", 4);
                     hold->SetInt("u_HasReactive", fsrReactive ? 1 : 0);
+                    hold->SetInt("u_Velocity", 5);
+                    hold->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
                     hold->SetInt("u_Hold", ((m_CameraStill || m_CameraNearlyStill) && m_FSR2HoldValid && !prm.Reset && !lightingChanged) ? 1 : 0);
                     hold->SetFloat2("u_Texel", glm::vec2(1.0f / (float)fsrW, 1.0f / (float)fsrH));
                     hold->SetFloat("u_Near", m_FinalNear);
@@ -2018,6 +2022,7 @@ namespace Conqueror
                     BindTexture(2, GetSceneDepthTexture());
                     BindTexture(3, m_MotionVectors.Texture);
                     BindTexture(4, fsrReactive);
+                    BindTexture(5, m_FinalHasVelocity ? m_Velocity.Texture : 0);
                     PostProcess::DrawFullscreenQuad();
                     Renderer::GetStats().PostProcessPasses++;
                     m_FSR2HoldIndex = next;
