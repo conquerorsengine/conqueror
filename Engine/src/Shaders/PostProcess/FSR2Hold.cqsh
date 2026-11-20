@@ -76,10 +76,11 @@ void main()
             bool moving = u_HasReactive == 1 && texture(u_Reactive, uv).r > 0.15;
             if (u_HasVelocity == 1)
             {
-                // Hareket eden nesnenin yakını (sürüklenen küpün kenarı, 287); piksel altı fizik kıpırtısı (çeyrek pikselin altı) sayılmaz
+                // Hareket eden nesnenin yakını (sürüklenen küpün kenarı, 287) ve açtığı / yeni beliren alan (w = 2 / 3, nesne hızı olmasa da);
+                // piksel altı fizik kıpırtısı (çeyrek pikselin altı) sayılmaz
                 vec4 vel = texture(u_Velocity, uv);
                 vec2 vpx = vel.xy * vec2(textureSize(u_Velocity, 0));
-                moving = moving || (vel.x < 5000.0 && (vel.w > 1.5 || dot(vpx, vpx) > 0.0625));
+                moving = moving || vel.w > 1.5 || (vel.x < 5000.0 && dot(vpx, vpx) > 0.0625);
             }
             if (moving)
             {

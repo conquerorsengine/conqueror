@@ -58,17 +58,18 @@ void main()
     if (u_HasVelocity == 1)
     {
         vec4 vel = texture(u_Velocity, v_UV);
+        // Hareket eden nesnenin kendisi işaretlenmez: FSR 2 onu hareket vektörüyle izler (işaretlenince geçmişini bırakıp kenarlarını
+        // merdivenli gösteriyordu: boşta sallanan silah 288, sürüklenen küp 289). Yalnız yeni beliren / görseli değişen nesne (w = 3) ve
+        // nesnenin önceki karede durup şimdi açılan durağan arka plan (w = 2, nesne hızı yok) tam işaretlenir: FSR AA'da sıfır hareketli
+        // piksel kırpılmadan tutulduğu için sürüklenen küpün eski görüntüsü orada kalıyordu (287). w = 2 nesnenin kendi üstüne de düşer
+        // (önceki pozu öndeyse); eskiden bu da işaretleniyordu
         if (vel.x < 5000.0)
         {
-            // Hareket eden nesnenin kendisi işaretlenmez: FSR 2 onu hareket vektörüyle izler; ince boşluk tutucusu hareketi hız
-            // tamponundan okur. Önceki konum izi (w = 2) nesnenin kendi üstüne de düşer (önceki pozu öndeyse); hızıyla ölçeklenir:
-            // 1 pikselin altında yok, 4 pikselde tam. Hep 1.0 iken boşta sallanan silahın büyük kısmında FSR 2 geçmişi bırakıyor,
-            // silahın kenarları FSR AA'da merdivenli görünüyordu (288); sürüklenen küp (her karede onlarca piksel) yine tam işaretlenir
             if (vel.w > 2.5)
                 reactive = 1.0;
-            else if (vel.w > 1.5)
-                reactive = max(reactive, smoothstep(1.0, 4.0, length(vel.xy * vec2(textureSize(u_Velocity, 0)))));
         }
+        else if (vel.w > 1.5)
+            reactive = 1.0;
     }
     float depth = texture(u_Depth, v_UV).r;
     if (depth < 1.0 && u_ShadowBoxCount > 0)
