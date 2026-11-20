@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <unordered_map>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror::SpriteAtlases
 {
@@ -202,7 +203,7 @@ namespace Conqueror::SpriteAtlases
             Img img;
             img.Path = p;
             int c = 0;
-            stbi_set_flip_vertically_on_load(0);
+            const StbFlipScope stbFlip(false);
             stbi_uc* data = stbi_load(p.string().c_str(), &img.W, &img.H, &c, 4);
             if (!data)
                 continue;

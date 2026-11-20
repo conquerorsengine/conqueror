@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror::Editor
 {
@@ -1111,7 +1112,7 @@ namespace Conqueror::Editor
                 return &it->second.Shapes;
             Entry entry;
             entry.Time = time;
-            stbi_set_flip_vertically_on_load(0);
+            const StbFlipScope stbFlip(false);
             int w = 0, h = 0, channels = 0;
             if (unsigned char* rgba = stbi_load(path.c_str(), &w, &h, &channels, 4))
             {

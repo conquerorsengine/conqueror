@@ -18,6 +18,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "Renderer/StbFlip.h"
 
 #if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)) && \
     defined(CQ_HAS_DBUS_HEADERS) && !defined(__ANDROID__)
@@ -55,6 +56,7 @@ namespace Conqueror
             std::string file = path.empty() ? FileSystem::ResolveResourcePath("Resources/Logo/AppIcon/conqueror_256.png")
                                             : SceneSerializer::ResolveAssetPath(path);
             int w = 0, h = 0, n = 0;
+            const StbFlipScope stbFlip(false);
             unsigned char* px = stbi_load(file.c_str(), &w, &h, &n, 4);
             if (!px)
             {

@@ -28,6 +28,7 @@
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror::GridSystem
 {
@@ -811,6 +812,7 @@ namespace Conqueror::GridSystem
         {
             std::pair<bool, glm::vec4> entry{ false, glm::vec4(0.0f, 0.0f, 1.0f, 1.0f) };
             int w = 0, h = 0, n = 0;
+            const StbFlipScope stbFlip(false);
             if (unsigned char* px = stbi_load(SceneSerializer::ResolveAssetPath(texture).c_str(), &w, &h, &n, 4))
             {
                 int x0 = w, y0 = h, x1 = -1, y1 = -1;

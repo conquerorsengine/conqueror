@@ -27,6 +27,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror
 {
@@ -118,6 +119,7 @@ namespace Conqueror
                 if (!ReadAt(m_Frames[(size_t)frame].first, data.data(), data.size()))
                     return false;
                 int comp = 0;
+                const StbFlipScope stbFlip(false);   // satırlar aşağıda FlipRows ile çevrilir
                 stbi_uc* pixels = stbi_load_from_memory(data.data(), (int)data.size(), &w, &h, &comp, 4);
                 if (!pixels)
                     return false;
@@ -321,6 +323,7 @@ namespace Conqueror
                 if (frame < 0 || frame >= (int)m_Files.size())
                     return false;
                 int comp = 0;
+                const StbFlipScope stbFlip(false);
                 stbi_uc* px = stbi_load(m_Files[(size_t)frame].c_str(), &w, &h, &comp, 4);
                 if (!px)
                     return false;

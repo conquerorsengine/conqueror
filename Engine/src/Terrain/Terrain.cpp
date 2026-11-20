@@ -16,6 +16,7 @@
 #include <fstream>
 #include <numeric>
 #include <random>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror
 {
@@ -723,7 +724,7 @@ namespace Conqueror
         else
         {
             int ch = 0;
-            stbi_set_flip_vertically_on_load(0);
+            const StbFlipScope stbFlip(false);
             if (stbi_is_16_bit(path.string().c_str()))
             {
                 stbi_us* data = stbi_load_16(path.string().c_str(), &w, &h, &ch, 1);
@@ -927,7 +928,7 @@ namespace Conqueror
             {
                 m.Time = t;
                 int w = 0, h = 0, c = 0;
-                stbi_set_flip_vertically_on_load(1);
+                const StbFlipScope stbFlip(true);
                 stbi_uc* data = stbi_load(file.c_str(), &w, &h, &c, 1);
                 if (!data) { m.Px.clear(); return false; }
                 m.W = w; m.H = h;

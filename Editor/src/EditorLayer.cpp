@@ -8797,6 +8797,20 @@ namespace Conqueror::Editor
         Automation::RegisterCommand("game_shown", [this, shownCheck](const Args& a, std::string& err) {
             return shownCheck(a, err, [this]() -> const glm::vec2* { return m_GamePanel ? m_GamePanel->GetImageBounds() : nullptr; }, "game_shown");
         });
+        // content_thumbnail_top <varlık> <r> <g> <b> [tolerans]: Content Browser'da bu varlığın küçük resminin kartta en üstte görünen
+        // satırlarının ortalama rengi (0-255) beklenen renge yakın mı (278: aynı fotoğraf ikinci kez bırakılınca küçük resim baş aşağıydı)
+        Automation::RegisterCommand("content_thumbnail_top", [this](const Args& a, std::string& err) {
+            if (a.size() < 5 || !m_ContentBrowserPanel) { err = "content_thumbnail_top <asset> <r> <g> <b> [tolerance]"; return false; }
+            float rgb[3] = { 0.0f, 0.0f, 0.0f };
+            if (!m_ContentBrowserPanel->ThumbnailTopColor(AssetUI::Resolve(a[1]), rgb)) { err = "no thumbnail for " + a[1]; return false; }
+            const float tol = a.size() > 5 ? std::stof(a[5]) : 40.0f;
+            char buf[160];
+            std::snprintf(buf, sizeof(buf), "THUMBNAIL_TOP %s %.0f %.0f %.0f", a[1].c_str(), rgb[0], rgb[1], rgb[2]);
+            Automation::Report(buf);
+            for (int c = 0; c < 3; ++c)
+                if (std::abs(rgb[c] - std::stof(a[2 + c])) > tol) { err = std::string("thumbnail top is ") + buf; return false; }
+            return true;
+        });
         // viewport_selected_saturation <kare> <>v|<v> [u0 v0 u1 v1]: sonraki N karede bir nesne seçiliyken EKRANDA görünen Viewport
         // bölgesinin renk doygunluğu ortalaması (max(r,g,b) - min(r,g,b)) koşulu sağlamalı. Bırakılan fotoğrafın gizmosu ile aynı karede
         // görünmesini denetler (277: gizmo bir kare boyunca fotoğrafsız, gri ızgaranın üstünde görünüyordu)

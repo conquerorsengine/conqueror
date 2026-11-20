@@ -51,6 +51,8 @@ namespace Conqueror::Editor
             m_SelectedPath = file;
             m_ScrollToSelected = true;
         }
+        // Otomasyon (278): yüklenmiş küçük resmin kartta EN ÜSTTE görünen satırlarının ortalama rengi (0-255); küçük resim yoksa false
+        bool ThumbnailTopColor(const std::filesystem::path& file, float rgb[3]) const;
         // Panel klavye odağında mı (genel kısayollar varlık yerine dosyaya uygulanmasın)
         bool IsFocused() const { return m_Focused; }
         // Sağ tık menüsündeki "<tür>" girişiyle aynı varlığı geçerli klasörde oluştur (otomasyon / testler); yeni yol

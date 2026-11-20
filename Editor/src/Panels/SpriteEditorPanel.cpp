@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror::Editor
 {
@@ -56,7 +57,7 @@ namespace Conqueror::Editor
         }
 
         int w = 0, h = 0, ch = 0;
-        stbi_set_flip_vertically_on_load(0);
+        const StbFlipScope stbFlip(false);
         unsigned char* data = stbi_load(texturePath.string().c_str(), &w, &h, &ch, 4);
         if (!data)
         {

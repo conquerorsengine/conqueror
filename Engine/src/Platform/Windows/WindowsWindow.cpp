@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <string>
 #include <thread>
+#include "Renderer/StbFlip.h"
 
 #ifdef CQ_PLATFORM_WINDOWS
     #ifndef NOMINMAX
@@ -413,6 +414,7 @@ namespace Conqueror
             return false;
 #endif
         int w = 0, h = 0, channels = 0;
+        const StbFlipScope stbFlip(false);
         unsigned char* pixels = stbi_load(pngPath.c_str(), &w, &h, &channels, 4);
         if (!pixels)
             return false;

@@ -12,6 +12,7 @@
 #include <stb_image_resize2.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror
 {
@@ -47,7 +48,7 @@ namespace Conqueror
     void OpenGLCubemap::ConvertEquirectangularToCubemap(const std::string& path, uint32_t resolution)
     {
         // HDR texture yükle
-        stbi_set_flip_vertically_on_load(true);
+        const StbFlipScope stbFlip(true);
         int width, height, channels;
         // Her zaman 3 kanal iste: alfa kanallı (RGBA) PNG/JPG'ler GL_RGB yüklemesinde satırları kaydırıyordu
         float* data = stbi_loadf(path.c_str(), &width, &height, &channels, 3);
@@ -238,6 +239,7 @@ namespace Conqueror
             int W = 0, H = 0;
         };
         Face loaded[6];
+        const StbFlipScope stbFlip(false);   // küp yüzleri OpenGL kuralında üstten başlar
         int size = 0;
         for (int i = 0; i < 6; ++i)
         {

@@ -66,6 +66,7 @@
 #include <fstream>
 #include <memory>
 #include <vector>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror::Editor::AssetInspector
 {
@@ -118,7 +119,7 @@ namespace Conqueror::Editor::AssetInspector
         {
             st.Pixels.clear();
             st.PixelW = st.PixelH = 0;
-            stbi_set_flip_vertically_on_load(1);
+            const StbFlipScope stbFlip(true);
             int w = 0, h = 0, c = 0;
             stbi_uc* data = stbi_load(st.Path.c_str(), &w, &h, &c, 4);
             if (!data)
@@ -280,7 +281,7 @@ namespace Conqueror::Editor::AssetInspector
         SpriteSheet sheet;
         sheet.TexturePath = path;
         sheet.Load();
-        stbi_set_flip_vertically_on_load(0);
+        const StbFlipScope stbFlip(false);
         int w = 0, h = 0, channels = 0;
         unsigned char* rgba = stbi_load(path.c_str(), &w, &h, &channels, 4);
         if (!rgba)

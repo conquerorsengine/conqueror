@@ -13,6 +13,7 @@
 #include <IconsFontAwesome6.h>
 #include <stb_image.h>
 #include <yaml-cpp/yaml.h>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror
 {
@@ -46,7 +47,7 @@ namespace Conqueror
             glm::vec4 rect = def ? def->Rect : glm::vec4(0.0f);
             if (shapes.empty() || !def)
             {
-                stbi_set_flip_vertically_on_load(0);
+                const StbFlipScope stbFlip(false);
                 unsigned char* rgba = stbi_load(SceneSerializer::ResolveAssetPath(sr.Texture->GetPath()).c_str(), &w, &h, &ch, 4);
                 if (!rgba)
                     return;

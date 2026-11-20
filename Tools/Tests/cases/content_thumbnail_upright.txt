@@ -1,0 +1,16 @@
+# template: basic3d
+# 278: aynı fotoğraf dosya yöneticisinden ikinci kez bırakılınca ("updown 1") Content Browser küçük resmi baş aşağı çıkıyordu: küçük
+# resim stb_image'in programın tamamında ortak "dikey çevir" ayarına bakıyordu, hemen önce seçili sprite'ın çerçevesi için yapılan
+# yükleme ayarı kapatınca ters yükleniyordu. Resmin üst yarısı kırmızı, alt yarısı mavi: iki kartta da üstte kırmızı görünmeli
+wait 40
+camera 8 20 0 0 1 0
+content_drop "{dir}/assets/photo/updown.png"
+wait 20
+drag 987 900 920 600 30
+wait 20
+expect_entities 1 updown
+content_drop "{dir}/assets/photo/updown.png"
+wait 30
+wait_until 5000 content_thumbnail_top "Assets/updown 1.png" 220 30 30
+content_thumbnail_top "Assets/updown.png" 220 30 30
+quit

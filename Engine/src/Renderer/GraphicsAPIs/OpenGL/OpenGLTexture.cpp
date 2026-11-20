@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <vector>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror
 {
@@ -208,7 +209,7 @@ namespace Conqueror
         if (!ReadFile(path, bytes))
             return false;
         // Arka plan iş parçacığı: çevirme bayrağı bu iş parçacığına özel (genel bayrağı başka yükleyiciler değiştirir)
-        stbi_set_flip_vertically_on_load_thread(1);
+        const StbFlipScope stbFlip(true);
         int w = 0, h = 0, channels = 0;
         if (!stbi_info_from_memory(bytes.data(), (int)bytes.size(), &w, &h, &channels))
             return false;
@@ -282,7 +283,7 @@ namespace Conqueror
 
     bool OpenGLTexture2D::LoadEncoded(const unsigned char* bytes, size_t size)
     {
-        stbi_set_flip_vertically_on_load(1);
+        const StbFlipScope stbFlip(true);
         int w = 0, h = 0, channels = 0;
         if (!stbi_info_from_memory(bytes, (int)size, &w, &h, &channels))
         {
@@ -681,6 +682,8 @@ namespace Conqueror
         if (Renderer::GetAPI() != RendererAPI::API::OpenGL || maxSize == 0)
             return nullptr;
         int w = 0, h = 0, comps = 0;
+        // Küçük resim çevrilmiş yüklenir (kartta v ters çizilir); önceki yüklemenin bıraktığı ayara bakmaz (278)
+        const StbFlipScope stbFlip(true);
         stbi_uc* data = stbi_load(path.c_str(), &w, &h, &comps, 4);
         if (!data || w <= 0 || h <= 0)
         {

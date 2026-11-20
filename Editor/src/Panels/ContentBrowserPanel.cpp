@@ -1,4 +1,5 @@
 #include "Scripting/DataAssets.h"
+#include <glad/glad.h>
 #include "Core/Math/CurveAsset.h"
 #include "Renderer/CubemapAsset.h"
 #include "Core/Animation/AvatarMask.h"
@@ -384,6 +385,28 @@ namespace Conqueror::Editor
         }
         m_Thumbnails[key] = thumb;
         return thumb.Failed ? nullptr : thumb.Texture;
+    }
+
+    bool ContentBrowserPanel::ThumbnailTopColor(const std::filesystem::path& file, float rgb[3]) const
+    {
+        auto it = m_Thumbnails.find(file.string());
+        if (it == m_Thumbnails.end() || it->second.Failed || !it->second.Texture)
+            return false;
+        const auto& tex = it->second.Texture;
+        const int w = (int)tex->GetWidth(), h = (int)tex->GetHeight();
+        if (w <= 0 || h <= 0)
+            return false;
+        // Kart v'yi ters çizer (uv0 = (0, 1)): ekranda en üstte görünen, dokunun son satırları
+        const int rows = std::max(1, h / 10);
+        std::vector<uint8_t> px((size_t)w * rows * 4);
+        glGetTextureSubImage(tex->GetRendererID(), 0, 0, h - rows, 0, w, rows, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLsizei)px.size(), px.data());
+        double sum[3] = { 0.0, 0.0, 0.0 };
+        for (size_t i = 0; i < px.size(); i += 4)
+            for (int c = 0; c < 3; ++c)
+                sum[c] += px[i + c];
+        for (int c = 0; c < 3; ++c)
+            rgb[c] = (float)(sum[c] / (double)((size_t)w * rows));
+        return true;
     }
 
     // ------------------------------------------------------------------ Çizim

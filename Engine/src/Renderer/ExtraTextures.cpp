@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <unordered_map>
 #include <vector>
+#include "Renderer/StbFlip.h"
 
 namespace Conqueror
 {
@@ -81,7 +82,7 @@ namespace Conqueror
             bool LoadImage(const std::string& path, Image& out, int size)
             {
                 int w, h, n;
-                stbi_set_flip_vertically_on_load(false);
+                const StbFlipScope stbFlip(false);
                 stbi_uc* data = stbi_load(SceneSerializer::ResolveAssetPath(path).c_str(), &w, &h, &n, 4);
                 if (!data)
                     return false;
