@@ -25,6 +25,11 @@ cvar r.Upscaler 10
 wait 150
 game_flicker 120 0.0 0.3 0.55 0.95 max8% 0.3 max% 0.08
 wait 125
+# 288: TAA + NIS: NIS'in keskinleştirmesi TAA'nın kalan titreşimini büyütüyordu (>8 seviye %0.12); NIS'ten önce TAA çıktısında tutucu
+cvar r.Upscaler 3
+wait 150
+game_flicker 120 0.0 0.3 0.55 0.95 max8% 0.1 max% 0.03
+wait 125
 # 288: TAA + SGSR 2 aynı tutucuyla (küp silüetleri ve merdivenler >8 seviye %0.87 oynuyordu)
 cvar r.Upscaler 15
 wait 150

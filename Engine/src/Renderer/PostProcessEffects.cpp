@@ -532,6 +532,8 @@ namespace Conqueror
         EnsureTarget(prevState, m_Width, m_Height, GL_RGBA16F);
         EnsureTarget(nextState, m_Width, m_Height, GL_RGBA16F);
         const bool hasVelocity = RenderObjectVelocity(camera);
+        // NIS'ten önceki titreşim tutucu (RunStillHold) bu karenin hız tamponunu ve ışık değişimini kullanır
+        m_FinalHasVelocity = hasVelocity;
         // Geçmiş + durum tek geçişte (iki renk eki). Ekler her karede bağlanır: boyut değişince dokular yeniden oluşur ve
         // OpenGL silinen dokunun numarasını yeni dokuya verebilir; numaraya bakan önbellek eski (yetim) dokuya çizdirip her
         // ikinci kareyi siyah bırakıyordu
@@ -544,6 +546,7 @@ namespace Conqueror
         // Nokta / spot ışığın gücü bu karede değişti (namlu alevi): TAA aydınlığı değişen piksellerde geçmişe az güvenir. En çok 6 kare süren
         // kısa değişim geçmişe hiç yazılmaz (sürekli yanıp sönen ışıkta yazılır, yoksa geçmiş bayatlar)
         const bool lightingChanged = Renderer3D::ConsumeLightingChange(this);
+        m_TAALightingChanged = lightingChanged;
         m_LightChangeFrames = lightingChanged ? m_LightChangeFrames + 1 : 0;
         const bool lightingFreeze = lightingChanged && m_LightChangeFrames <= 6;
         // Parçacık ya da kısa ışık değişimi olan karede gösterilen görüntü geçmişten ayrı bir hedefe yazılır (duman ve alev geçmişe girmez)

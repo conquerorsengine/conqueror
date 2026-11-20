@@ -767,7 +767,8 @@ namespace Conqueror
             m_FSR2HoldValid = false;
         m_FSR2HoldOwner = owner;
         m_FSR2HoldFrame = m_FrameIndex;
-        const bool lightingChanged = Renderer3D::ConsumeLightingChange(this);
+        // TAA çıktısında (owner 3) ışık değişimini TAA bu karede zaten tüketti
+        const bool lightingChanged = owner == 3 ? m_TAALightingChanged : Renderer3D::ConsumeLightingChange(this);
         const uint32_t next = 1u - m_FSR2HoldIndex;
         EnsureTarget(m_FSR2Hold, w, h, GL_RGBA8);
         EnsureTarget(m_FSR2HoldState[0], w, h, GL_RGBA16F);
@@ -2121,7 +2122,8 @@ namespace Conqueror
             m_SGSR2Valid = true;
             // 288: SGSR 2 kamera dururken küp silüetlerini ve merdivenleri titreşim döngüsüyle oynatıyordu (>8 seviye %0.87, TAAU %0.03);
             // FSR 2'deki tutucu (hareket vektörü yok: yalnız kamera tam dururken)
-            const uint32_t sgsrResult = RunStillHold(2, m_SGSR2History[ni].Texture, outW, outH, 0, 0, m_CameraStill, !historyOk);
+            // Parçacık / saydam hareket (duman, mermi izi) tepki maskesinden: oralarda ortalama yapılmaz
+            const uint32_t sgsrResult = RunStillHold(2, m_SGSR2History[ni].Texture, outW, outH, m_ReactiveUsed ? m_Reactive.Texture : 0, 0, m_CameraStill, !historyOk);
 
             toOutput();
             sharpen->Bind();
@@ -2285,6 +2287,10 @@ namespace Conqueror
                 Renderer::GetStats().PostProcessPasses++;
                 return true;
             };
+            // 288: TAA + NIS kamera dururken TAA'nın kalan titreşimi (birkaç seviye) NIS'in keskinleştirmesiyle büyüyordu (>8 seviye
+            // değişen piksel doğal TAA'nın 3-4 katı); NIS'ten önce TAA çıktısında aynı tutucu (FSR 2 / SGSR 2'deki; FSR AA'da zaten var)
+            if (up == UpscalerMode::NIS && Valid(nis) && m_JitterActive && !m_UseFSR2 && !AntiAliasing::IsSupersampling(aa))
+                cur = RunStillHold(3, cur, m_Width, m_Height, m_ReactiveUsed ? m_Reactive.Texture : 0, 0, m_CameraStill, false);
             if (AntiAliasing::IsSupersampling(aa) && Valid(down))
             {
                 toOutput();
