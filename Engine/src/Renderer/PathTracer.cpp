@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 
 #include <algorithm>
+#include <cmath>
 
 // Ortak sahne / BVH / ışık / gökyüzü: Renderer/RayTracing/RayTracingScene
 namespace Conqueror
@@ -110,11 +111,85 @@ void main()
 }
 )";
 
+        // 299: kenar korumalı à-trous dalgacık süzgeci (Dammertz 2010 / SVGF uzamsal geçişi): 5x5 B3 çekirdeği, adım 1, 2, 4, 8 ...
+        // Kenar durdurma: komşunun derinliği pikselin derinlik düzleminden (gradyanla öngörülen) uzaksa (başka yüzey) ve parlaklık
+        // farkı yerel gürültü düzeyini (aynı yüzeydeki 5x5 parlaklık varyansı, geçişlerle süzülür) aşıyorsa ağırlık düşer: düz parlak
+        // yüzey (ışıyan şerit) gürültülü karanlık zemine yayılmaz
+        const char* kDenoiseMain = R"(
+layout(rgba16f, binding = 0) uniform readonly image2D u_DnIn;
+layout(rgba16f, binding = 1) uniform writeonly image2D u_DnOut;
+uniform sampler2D u_DnDepth;
+uniform ivec2 u_DnSize;
+uniform int u_DnStep;
+uniform int u_DnMode;      // 0: varyans ön geçişi (rgb + parlaklık varyansı a'ya), 1: süzgeç geçişi
+uniform int u_DnLast;      // son geçiş: a = 1
+uniform float u_DnNear;
+uniform float u_DnFar;
+float DnLinear(ivec2 p)
+{
+    float d = texelFetch(u_DnDepth, clamp(p, ivec2(0), u_DnSize - 1), 0).r;
+    float z = d * 2.0 - 1.0;
+    return 2.0 * u_DnNear * u_DnFar / max(u_DnFar + u_DnNear - z * (u_DnFar - u_DnNear), 1e-6);
+}
+float DnLum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+void main()
+{
+    ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+    if (p.x >= u_DnSize.x || p.y >= u_DnSize.y) return;
+    vec4 cp = imageLoad(u_DnIn, p);
+    float zp = DnLinear(p);
+    float gx = 0.5 * (DnLinear(p + ivec2(1, 0)) - DnLinear(p - ivec2(1, 0)));
+    float gy = 0.5 * (DnLinear(p + ivec2(0, 1)) - DnLinear(p - ivec2(0, 1)));
+    float lp = DnLum(cp.rgb);
+    const float k[3] = float[](0.375, 0.25, 0.0625);
+    if (u_DnMode == 0)
+    {
+        // Aynı yüzeydeki 5x5 komşulukta parlaklık varyansı (gürültü düzeyi)
+        float m1 = 0.0, m2 = 0.0, ws = 0.0;
+        for (int y = -2; y <= 2; ++y)
+            for (int x = -2; x <= 2; ++x)
+            {
+                ivec2 q = clamp(p + ivec2(x, y), ivec2(0), u_DnSize - 1);
+                float expected = zp + gx * float(x) + gy * float(y);
+                float w = abs(DnLinear(q) - expected) < 0.02 * zp + 1e-3 ? 1.0 : 0.0;
+                float l = DnLum(imageLoad(u_DnIn, q).rgb);
+                m1 += l * w; m2 += l * l * w; ws += w;
+            }
+        m1 /= max(ws, 1.0); m2 /= max(ws, 1.0);
+        imageStore(u_DnOut, p, vec4(cp.rgb, max(m2 - m1 * m1, 0.0)));
+        return;
+    }
+    float sigma = 4.0 * sqrt(max(cp.a, 0.0)) + 1e-3;
+    vec3 sum = vec3(0.0);
+    float wsum = 0.0, vsum = 0.0;
+    for (int y = -2; y <= 2; ++y)
+        for (int x = -2; x <= 2; ++x)
+        {
+            ivec2 o = ivec2(x, y) * u_DnStep;
+            ivec2 q = clamp(p + o, ivec2(0), u_DnSize - 1);
+            vec4 cq = imageLoad(u_DnIn, q);
+            float expected = zp + gx * float(o.x) + gy * float(o.y);
+            float wz = exp(-abs(DnLinear(q) - expected) / (0.01 * zp + 0.002 * float(u_DnStep) * zp + 1e-4));
+            float wl = exp(-abs(lp - DnLum(cq.rgb)) / sigma);
+            float w = k[abs(x)] * k[abs(y)] * wz * wl;
+            sum += cq.rgb * w;
+            vsum += w * w * cq.a;
+            wsum += w;
+        }
+    wsum = max(wsum, 1e-6);
+    imageStore(u_DnOut, p, vec4(sum / wsum, u_DnLast == 1 ? 1.0 : vsum / (wsum * wsum)));
+}
+)";
+
         struct State
         {
             GLuint Program = 0;
             bool ProgramTried = false;
             GLuint Accum = 0;
+            GLuint DenoiseProgram = 0;
+            bool DenoiseTried = false;
+            GLuint DenoiseTemp[2] = { 0, 0 };
+            int DenoiseW = 0, DenoiseH = 0;
             int AccumW = 0, AccumH = 0;
             uint64_t GeometryVersion = 0, LightHash = 0;
             glm::mat4 LastViewProj{ 0.0f };
@@ -133,7 +208,62 @@ void main()
         int GetSampleCount() { return (int)S().Frame; }
         int GetTriangleCount() { return RayTracingScene::GetStats().Triangles; }
 
-        bool Render(Scene& scene, const RenderCamera& cam, uint32_t target)
+        // 299: az örnekli sonucun gürültüsü giderilir (target yerinde). Geçiş sayısı örnek sayısıyla azalır: 1-2 örnek 4 geçiş (adım
+        // 1..8, ~30 piksellik etki), 3-8: 3, 9-32: 2, 33-128: 1, sonrası yok
+        void Denoise(uint32_t target, uint32_t depth, int tw, int th, const RenderCamera& cam)
+        {
+            State& s = S();
+            const int spp = (int)s.Frame;
+            const int passes = spp <= 2 ? 4 : spp <= 8 ? 3 : spp <= 32 ? 2 : spp <= 128 ? 1 : 0;
+            if (!passes || !depth || cam.Orthographic)
+                return;
+            if (!s.DenoiseTried)
+            {
+                s.DenoiseTried = true;
+                s.DenoiseProgram = RayTracingScene::CompileCompute("Path Tracer Denoise", "layout(local_size_x = 8, local_size_y = 8) in;", kDenoiseMain);
+            }
+            if (!s.DenoiseProgram)
+                return;
+            if (!s.DenoiseTemp[0] || s.DenoiseW != tw || s.DenoiseH != th)
+            {
+                if (s.DenoiseTemp[0])
+                    glDeleteTextures(2, s.DenoiseTemp);
+                glCreateTextures(GL_TEXTURE_2D, 2, s.DenoiseTemp);
+                glTextureStorage2D(s.DenoiseTemp[0], 1, GL_RGBA16F, tw, th);
+                glTextureStorage2D(s.DenoiseTemp[1], 1, GL_RGBA16F, tw, th);
+                s.DenoiseW = tw;
+                s.DenoiseH = th;
+            }
+            glUseProgram(s.DenoiseProgram);
+            auto U = [&](const char* n) { return glGetUniformLocation(s.DenoiseProgram, n); };
+            glUniform2i(U("u_DnSize"), tw, th);
+            glUniform1f(U("u_DnNear"), cam.NearClip);
+            glUniform1f(U("u_DnFar"), cam.FarClip);
+            glUniform1i(U("u_DnDepth"), 0);
+            glBindTextureUnit(0, depth);
+            const GLuint groupsX = ((uint32_t)tw + 7) / 8, groupsY = ((uint32_t)th + 7) / 8;
+            // Varyans ön geçişi (hedef -> geçici 0), sonra süzgeç geçişleri geçici tamponlar arasında (varyans da süzülür, SVGF gibi)
+            uint32_t src = target;
+            for (int i = -1; i < passes; ++i)
+            {
+                const uint32_t dst = s.DenoiseTemp[(i + 1) & 1];
+                glUniform1i(U("u_DnMode"), i < 0 ? 0 : 1);
+                glUniform1i(U("u_DnLast"), i == passes - 1 ? 1 : 0);
+                glUniform1i(U("u_DnStep"), i < 0 ? 1 : 1 << i);
+                glBindImageTexture(0, src, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+                glBindImageTexture(1, dst, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+                glDispatchCompute(groupsX, groupsY, 1);
+                glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+                src = dst;
+            }
+            glCopyImageSubData(src, GL_TEXTURE_2D, 0, 0, 0, 0, target, GL_TEXTURE_2D, 0, 0, 0, 0, tw, th, 1);
+            glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+            glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+            glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+            glBindTextureUnit(0, 0);
+        }
+
+        bool Render(Scene& scene, const RenderCamera& cam, uint32_t target, uint32_t depth)
         {
             State& s = S();
             if (!s.ProgramTried)
@@ -216,6 +346,7 @@ void main()
             glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
             glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+            Denoise(target, depth, tw, th, cam);
             glUseProgram(0);
             return true;
         }

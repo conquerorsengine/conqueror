@@ -294,7 +294,8 @@ namespace Conqueror::Editor
 
         // Path Tracing: raster kare (ışıklar / ortam / dönüşümler bu karede güncellendi) ışın izlenmiş birikimle değiştirilir
         if (m_Context && m_Shading == ViewportShading::PathTracing && !m_EditorCamera.Is2D())
-            PathTracer::Render(*m_Context, RenderCamera::FromEditorCamera(m_EditorCamera, width, height), m_PostStack.GetSceneColorTexture());
+            PathTracer::Render(*m_Context, RenderCamera::FromEditorCamera(m_EditorCamera, width, height), m_PostStack.GetSceneColorTexture(),
+                               m_PostStack.GetSceneDepthTexture());
 
         // 2. Post-process (bloom, SSAO, ton eşleme, renk, AA) -> viewport framebuffer
         m_Framebuffer->Bind();

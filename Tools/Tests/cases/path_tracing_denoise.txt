@@ -1,0 +1,16 @@
+# template: fps
+# 299: Path Tracing kipinde kamera hareket ederken (birikim her karede baştan başlar) görüntü noktalı / karıncalıydı. Az örnekte sonuç
+# kenar korumalı à-trous süzgeciyle (SVGF'nin uzamsal geçişi gibi, sahne derinliği + yerel parlaklık varyansı) temizlenir; örnek
+# arttıkça süzgeç küçülür, 128 örnekten sonra dokunulmaz. Ölçü: 1-2 örnekli karenin yakınsamış (~600 örnek) kareden farkı
+# (eskiden 7.96, şimdi 1.39)
+wait 40
+focus Viewport
+camera 14 25 30 0 1 0
+shading pathtracing
+timeout 300
+wait 600
+viewport_region_change mark 0.1 0.1 0.9 0.9
+pathtracer reset
+wait 1
+viewport_region_change expect 0.1 0.1 0.9 0.9 <3
+quit

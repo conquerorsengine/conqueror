@@ -25,7 +25,10 @@ namespace Conqueror
         CQ_API Settings& GetSettings();
         // target: RGBA16F doku (boyutu dokudan okunur); birikmiş ortalama doğrusal HDR renk yazılır. Işıklar ve ortam bu karede
         // Renderer3D'ye verilenlerdir (sahne önce raster ile çizilmiş olmalı). camera: titreşimsiz (TAA'sız) kamera.
-        CQ_API bool Render(Scene& scene, const RenderCamera& camera, uint32_t target);
+        // depth: bu karenin raster sahne derinliği (0: gürültü giderme yok). 299: az örnekte (kamera / sahne değişince birikim baştan
+        // başlar, hareket ederken 1 örnek) sonuç kenar korumalı à-trous süzgeciyle (SVGF'nin uzamsal kısmı gibi) temizlenir; örnek
+        // arttıkça süzgeç küçülür, 128 örnekten sonra birikmiş görüntüye dokunulmaz (Blender'ın Viewport gürültü gidermesi gibi)
+        CQ_API bool Render(Scene& scene, const RenderCamera& camera, uint32_t target, uint32_t depth = 0);
         CQ_API void Reset();
         CQ_API int GetSampleCount();
         CQ_API int GetTriangleCount();
