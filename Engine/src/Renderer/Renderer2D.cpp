@@ -54,6 +54,7 @@ namespace Conqueror
         std::array<std::shared_ptr<Texture2D>, MaxTextureSlots> TextureSlots;
         uint32_t TextureSlotIndex = 1; // 0 = beyaz doku
         int OutputMode = -1;
+        float AlphaClip = 0.01f;
         // 2D ışıklandırma (Light 2D) ve Sprite Mask etkileşimi: çizim anında uygulanır
         uint32_t LightTexture = 0;
         glm::vec2 LightOrigin{ 0.0f };
@@ -210,6 +211,7 @@ namespace Conqueror
             SetSamplerUniforms(shader);
         shader.SetMat4("u_ViewProjection", s_Data.ViewProjection);
         shader.SetInt("u_OutputMode", s_Data.OutputMode);
+        shader.SetFloat("u_AlphaClip", s_Data.AlphaClip);
         const bool lit = s_Data.Lit && s_Data.LightTexture != 0;
         shader.SetInt("u_Lit", lit ? 1 : 0);
         if (lit)
@@ -273,6 +275,15 @@ namespace Conqueror
         {
             Flush();
             s_Data.MaskMode = mode;
+        }
+    }
+
+    void Renderer2D::SetAlphaClip(float alpha)
+    {
+        if (alpha != s_Data.AlphaClip)
+        {
+            Flush();
+            s_Data.AlphaClip = alpha;
         }
     }
 

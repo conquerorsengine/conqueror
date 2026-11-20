@@ -8811,6 +8811,28 @@ namespace Conqueror::Editor
                 if (std::abs(rgb[c] - std::stof(a[2 + c])) > tol) { err = std::string("thumbnail top is ") + buf; return false; }
             return true;
         });
+        // viewport_depth <u> <v> mark | expect_same | expect_diff [tolerans]: Viewport'un sahne derinliği (TAA'nın geri izlemede kullandığı) bu noktada;
+        // mark saklar, expect_same saklananla aynı mı bakar (274: yarı saydam UI karartması arkasındaki sahnenin derinliğini ezmemeli)
+        Automation::RegisterCommand("viewport_depth", [this](const Args& a, std::string& err) {
+            static float s_Marked = -1.0f;
+            if (a.size() < 4 || !m_ViewportPanel) { err = "viewport_depth <u> <v> mark|expect_same|expect_diff [tolerance]"; return false; }
+            PostProcessStack& stack = m_ViewportPanel->GetPostProcessStack();
+            const uint32_t tex = stack.GetSceneDepthTexture();
+            const int w = (int)stack.GetWidth(), h = (int)stack.GetHeight();
+            if (!tex || w <= 0 || h <= 0) { err = "no scene depth"; return false; }
+            const int x = std::clamp((int)(std::stof(a[1]) * (float)w), 0, w - 1), y = std::clamp((int)(std::stof(a[2]) * (float)h), 0, h - 1);
+            float depth = 0.0f;
+            glGetTextureSubImage(tex, 0, x, y, 0, 1, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, sizeof(float), &depth);
+            char buf[96];
+            std::snprintf(buf, sizeof(buf), "VIEWPORT_DEPTH %.6f", depth);
+            Automation::Report(buf);
+            if (a[3] == "mark") { s_Marked = depth; return true; }
+            const float tol = a.size() > 4 ? std::stof(a[4]) : 1e-4f;
+            if (s_Marked < 0.0f) { err = "nothing marked"; return false; }
+            const bool same = std::abs(depth - s_Marked) <= tol;
+            if (a[3] == "expect_diff" ? same : !same) { err = std::string(buf) + (same ? " equals" : " differs from") + " marked " + std::to_string(s_Marked); return false; }
+            return true;
+        });
         // viewport_selected_saturation <kare> <>v|<v> [u0 v0 u1 v1]: sonraki N karede bir nesne seçiliyken EKRANDA görünen Viewport
         // bölgesinin renk doygunluğu ortalaması (max(r,g,b) - min(r,g,b)) koşulu sağlamalı. Bırakılan fotoğrafın gizmosu ile aynı karede
         // görünmesini denetler (277: gizmo bir kare boyunca fotoğrafsız, gri ızgaranın üstünde görünüyordu)

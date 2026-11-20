@@ -44,6 +44,7 @@ uniform sampler2D u_Tex0, u_Tex1, u_Tex2, u_Tex3, u_Tex4, u_Tex5, u_Tex6, u_Tex7
 #else
 uniform sampler2D u_Textures[31];
 #endif
+uniform float u_AlphaClip = 0.01;   // bu alfanın altındaki pikseller atılır (Renderer2D::SetAlphaClip)
 uniform int u_OutputMode = -1;   // -1 kare ayarına göre, 0 sRGB (UI üst katmanı), 1 doğrusal
 // Light 2D: ekran boyutlu ışık birikim dokusu (doğrusal HDR); sprite rengi bununla çarpılır
 uniform sampler2D u_LightTex;
@@ -136,7 +137,7 @@ void main()
     else
         texColor = SampleTexture(v_TexIndex, v_TexCoord * v_TilingFactor) * v_Color;
 
-    if (texColor.a < 0.01)
+    if (texColor.a < u_AlphaClip)
         discard;
 
     // Not: sprite'lar arkadan öne sıralı çizilir; yarı saydam pikseller gerçek derinliğini yazar.

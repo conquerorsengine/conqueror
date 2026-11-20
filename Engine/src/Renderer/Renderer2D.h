@@ -26,6 +26,9 @@ namespace Conqueror
         static void Flush();
         // -1: kare ayarı (HDR hattında doğrusal), 0: sRGB çıktı (post-process sonrası UI), 1: doğrusal
         static void SetOutputMode(int mode);
+        // Bu alfanın altındaki pikseller çizilmez (varsayılan 0.01). Yalnız derinlik yazan geçişte yükseltilir: yarı saydam karartma
+        // katmanları derinlik yazmasın (274)
+        static void SetAlphaClip(float alpha);
         // 2D ışık dokusu (0 = kapalı) ve görünüm kökeni (gl_FragCoord -> doku pikseli)
         static void SetLighting(uint32_t lightTexture, const glm::vec2& viewportOrigin);
         // Sonraki çizimler ışıkla çarpılsın mı (sprite / karo: evet, UI / metin: hayır)

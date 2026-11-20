@@ -3088,10 +3088,15 @@ namespace Conqueror
             Renderer2D::EndScene();
             if (depthTest)
             {
+                // Derinliği yalnız çoğunlukla opak pikseller yazar (274): tuvalin tamamını kaplayan yarı saydam karartma (Parkour
+                // menüsünde %35'lik MenuRoot) derinlik yazınca TAA arkadaki binaları tuvalin derinliğiyle geri izliyor, kamera
+                // hareket ederken onları parçalayıp bulaştırıyordu; arkası görünen yerlerde sahnenin kendi derinliği kalır
                 glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                Renderer2D::SetAlphaClip(0.5f);
                 Renderer2D::BeginScene(vp, true, true);
                 RenderItems(items, glm::mat4(1.0f), false, screen);
                 Renderer2D::EndScene();
+                Renderer2D::SetAlphaClip(0.01f);
                 glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             }
         }
