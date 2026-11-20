@@ -50,7 +50,9 @@ void main()
         FragColor = vec4(ToGamma(sum / float(k.x * k.y)), 1.0);
         return;
     }
-    float radius = u_Mode == 2 ? 1.0 : 2.0;               // çıktı pikseli cinsinden süzgeç yarıçapı
+    // Çıktı pikseli cinsinden süzgeç yarıçapı. FSAA çadırı 0.8 (komşu pikselin en yakın alt örnekleri 1/11 ağırlıkla): 1.0 iken
+    // görüntü SSAA'dan %11-20 bulanıktı (288; zemin dokusu ayrıntısı %80, şimdi %96)
+    float radius = u_Mode == 2 ? 0.8 : 2.0;
     vec2 r = radius * u_Scale;
     ivec2 lo = ivec2(floor(center - r));
     ivec2 hi = ivec2(ceil(center + r));
@@ -61,7 +63,7 @@ void main()
     for (int x = lo.x; x <= hi.x; ++x)
     {
         vec2 d = (vec2(x, y) + 0.5 - center) / u_Scale;     // çıktı pikseli cinsinden uzaklık
-        float w = u_Mode == 2 ? max(0.0, 1.0 - abs(d.x)) * max(0.0, 1.0 - abs(d.y)) : Lanczos2(d.x) * Lanczos2(d.y);
+        float w = u_Mode == 2 ? max(0.0, 1.0 - abs(d.x) / radius) * max(0.0, 1.0 - abs(d.y) / radius) : Lanczos2(d.x) * Lanczos2(d.y);
         if (w == 0.0) continue;
         vec3 c = ToLinear(texelFetch(u_Source, clamp(ivec2(x, y), ivec2(0), srcSize - 1), 0).rgb);
         sum += c * w;
