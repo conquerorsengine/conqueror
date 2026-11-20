@@ -6,6 +6,8 @@ usage: regression.py [--list] [-j N] [case ...]       (no cases = everything; -j
 Cases:
   template:<id>   generated for every hub template: the hub creates a fresh project, the editor opens it, presses Play
                   for 240 frames and stops. Passes with 0 script errors.
+  sample:<name>   generated for every project in Samples/: a fresh copy is opened and every scene is played for 90
+                  frames. Passes with 0 script errors in every scene (the UI widgets are created, scripts find them).
   <name>          Tools/Tests/cases/<name>.txt: an editor automation script. Header lines:
                       # template: <hub template id>   the project the case runs on (made fresh with the hub)
                       # serial                         timing-sensitive: runs alone after the parallel cases (-j)
@@ -63,6 +65,32 @@ def run(cmd, env=None, cwd=None):
     # Paralel çalışmada (-j) her işçinin ortamı (kendi oyun kayıt klasörü) run_case'den gelir
     p = subprocess.run(cmd, env=env, cwd=cwd, capture_output=True, text=True, check=False)
     return p.returncode, (p.stdout or "") + (p.stderr or "")
+
+
+def samples():
+    # Samples/<Ad>/<Ad>.cqproj olan örnek projeler (Parkour, Ember Trail, Tetris)
+    base = os.path.join(ROOT, "Samples")
+    if not os.path.isdir(base):
+        return []
+    return sorted(d for d in os.listdir(base) if os.path.isfile(os.path.join(base, d, d + ".cqproj")))
+
+
+def sample_project(sample, name):
+    # Örneğin taze kopyası (depodaki dosyalara ve kullanıcının açtığı kopyaya dokunulmaz)
+    os.makedirs(WORK, exist_ok=True)
+    project = os.path.join(WORK, name)
+    if os.path.isdir(project) and os.path.basename(project).startswith("Reg_sample_"):
+        shutil.rmtree(project)
+    shutil.copytree(os.path.join(ROOT, "Samples", sample), project)
+    return project
+
+
+def sample_script(project):
+    lines = ["wait 40"]
+    for scene in sorted(f[:-8] for f in os.listdir(os.path.join(project, "Assets", "Scenes")) if f.endswith(".cqscene")):
+        lines += [f"open_scene Assets/Scenes/{scene}.cqscene", "wait 20", "focus Game", "script_errors mark", "play", "wait 90",
+                  "script_errors expect 0", "stop", "wait 10"]
+    return "\n".join(lines + ["quit"]) + "\n"
 
 
 def make_project(tid, name, env=None):
@@ -146,7 +174,7 @@ def matrix_of(name):
 
 
 def is_serial(case):
-    if case.startswith("template:"):
+    if case.startswith(("template:", "sample:")):
         return False
     path = os.path.join(CASES, case.split("@", 1)[0] + ".txt")
     return os.path.exists(path) and re.search(r"^#\s*serial\b", open(path, encoding="utf-8").read(), re.M) is not None
@@ -154,7 +182,7 @@ def is_serial(case):
 
 def run_case(case, env=None):
     result = run_case_inner(case, env)
-    if not case.startswith("template:"):
+    if not case.startswith(("template:", "sample:")):
         _, text = case_script(case.partition("@")[0])
         for cmd in re.findall(r"^#\s*teardown:\s*(.+)$", text, re.M):
             run(shlex.split(cmd), env=env)
@@ -163,6 +191,22 @@ def run_case(case, env=None):
 
 def run_case_inner(case, env=None):
     start = time.time()
+    if case.startswith("sample:"):
+        name = "Reg_" + re.sub(r"[^A-Za-z0-9_]", "_", case)
+        project = sample_project(case.split(":", 1)[1], name)
+        script = os.path.join(WORK, f"_{name}.txt")
+        with open(script, "w", encoding="utf-8") as f:
+            f.write(sample_script(project))
+        code, result = run_editor(script, project, env)
+        fails = [l for l in result.splitlines() if " FAIL " in l or l.startswith("FAIL")]
+        done = re.search(r"DONE failures=(\d+)", result)
+        if not done:
+            return False, "automation did not finish (crash or timeout)", time.time() - start
+        if int(done.group(1)) != 0:
+            return False, "; ".join(fails)[:300] or f"{done.group(1)} failures", time.time() - start
+        if code != 0:
+            return False, f"editor exit code {code} (crash at shutdown?)", time.time() - start
+        return True, "", time.time() - start
     if case.startswith("template:"):
         tid = case.split(":", 1)[1]
         text = template_script()
@@ -228,7 +272,7 @@ def all_cases():
     for name in sorted(f[:-4] for f in os.listdir(CASES) if f.endswith(".txt")):
         matrix = matrix_of(name)
         named += [f"{name}@{v}" for v in matrix[1]] if matrix else [name]
-    return [f"template:{t}" for t in hub_templates()] + named
+    return [f"template:{t}" for t in hub_templates()] + [f"sample:{s}" for s in samples()] + named
 
 
 def main():
@@ -244,7 +288,7 @@ def main():
     # Matrisli testin adı tek başına verilirse her değeri çalışır (gl_profiles -> gl_profiles@4.6 ...)
     cases = []
     for c in args or all_cases():
-        matrix = None if "@" in c or c.startswith("template:") else matrix_of(c)
+        matrix = None if "@" in c or c.startswith(("template:", "sample:")) else matrix_of(c)
         cases += [f"{c}@{v}" for v in matrix[1]] if matrix else [c]
     results = []
     lock = threading.Lock()
