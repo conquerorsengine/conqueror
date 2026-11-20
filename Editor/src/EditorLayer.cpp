@@ -1515,6 +1515,26 @@ namespace Conqueror::Editor
         }
     }
 
+    void EditorLayer::DockPaletteNextToTerrain()
+    {
+        auto dockOf = [](const char* name) -> ImGuiID {
+            if (ImGuiWindow* w = ImGui::FindWindowByName(name))
+                return w->DockId;
+            if (ImGuiWindowSettings* ws = ImGui::FindWindowSettingsByID(ImHashStr(name)))
+                return ws->DockId;
+            return 0;
+        };
+        const ImGuiID palette = dockOf("###TilePalette");
+        const ImGuiID hierarchy = dockOf("Hierarchy");
+        ImGuiID terrain = dockOf("###Terrain");
+        if (!terrain || !ImGui::DockContextFindNodeByID(GImGui, terrain))
+            terrain = m_ToolsDockId;
+        if (!terrain || !ImGui::DockContextFindNodeByID(GImGui, terrain) || palette == terrain)
+            return;
+        if (palette == 0 || palette == hierarchy || !ImGui::DockContextFindNodeByID(GImGui, palette))
+            ImGui::DockBuilderDockWindow("###TilePalette", terrain);
+    }
+
     void EditorLayer::OnImGuiRender()
     {
         GameInput::CaptureImGuiFrameInput();
@@ -1843,8 +1863,9 @@ namespace Conqueror::Editor
                 ImGui::DockBuilderDockWindow("###UI Editor", dockspace_id);
                 ImGui::DockBuilderDockWindow("Animator", dockspace_id);
                 ImGui::DockBuilderDockWindow("###Terrain", dock_id_left_bottom);
-                // 199: Palette ve Bind Widgets, Hierarchy'nin yanında sekme (UI Editor açılınca açılır, kapanınca kapanır)
-                ImGui::DockBuilderDockWindow("###TilePalette", dock_id_left);
+                // 282: Palette Terrain'in yanında sekme (araç panelleri bölmesi); 199: Bind Widgets Hierarchy'nin yanında (UI Editor
+                // açılınca açılır, kapanınca kapanır)
+                ImGui::DockBuilderDockWindow("###TilePalette", dock_id_left_bottom);
                 ImGui::DockBuilderDockWindow("###BindWidgets", dock_id_left);
                 ImGui::DockBuilderDockWindow("###Audio Mixer", dockspace_id);
                 ImGui::DockBuilderDockWindow("###Sprite Editor", dockspace_id);
@@ -2667,9 +2688,14 @@ namespace Conqueror::Editor
         if (m_ShowTerrain && m_TerrainPanel)
             m_TerrainPanel->OnImGuiRender(&m_ShowTerrain);
 
+        // 282: Palette açılırken eski varsayılan yerindeyse (Hierarchy'nin yanında, eski yerleşim dosyalarından) ya da hiç yerleşmemişse
+        // Terrain'in bölmesine sekme olarak taşınır; kullanıcının başka bir yere taşıdığı Palette olduğu yerde kalır
+        if (m_ShowTilePalette && !m_PaletteWasShown)
+            DockPaletteNextToTerrain();
+        m_PaletteWasShown = m_ShowTilePalette;
         if (m_ShowTilePalette && m_TilePalettePanel)
             m_TilePalettePanel->OnImGuiRender(&m_ShowTilePalette);
-        // 199: UI Editor açılınca Palette (UI kategorisi) Hierarchy'nin yanında açılır, kapanınca onunla kapanır
+        // 199: UI Editor açılınca Palette (UI kategorisi) açılır (Terrain'in yanında, 282), kapanınca onunla kapanır
         if (m_UIEditorPanel)
         {
             const bool uiOpen = m_UIEditorPanel->IsOpen();
@@ -3232,52 +3258,105 @@ namespace Conqueror::Editor
     {
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::MenuItem("Hierarchy", nullptr, &m_ShowHierarchy);
-            ImGui::MenuItem("Inspector", nullptr, &m_ShowInspector);
-            ImGui::MenuItem("Lighting", nullptr, &m_ShowLighting);
-            ImGui::MenuItem("Occlusion Culling", nullptr, &m_ShowOcclusion);
-            ImGui::MenuItem("Audio Mixer", nullptr, &m_ShowAudioMixer);
-            ImGui::MenuItem("Profiler", "Ctrl+7", &m_ShowProfiler);
-            ImGui::MenuItem("Multiplayer", nullptr, &m_ShowMultiplayer);
-            ImGui::MenuItem("Timeline", nullptr, &m_ShowTimeline);
-            ImGui::MenuItem("Animation", "Ctrl+6", &m_ShowAnimation);
-            ImGui::MenuItem("Sprite Editor", nullptr, &m_ShowSpriteEditor);
-            ImGui::MenuItem("Terrain", nullptr, &m_ShowTerrain);
-            ImGui::MenuItem("Tile Palette", nullptr, &m_ShowTilePalette);
+            // 280: Unity'nin Window menüsü gibi kategoriler (General, Rendering, Animation, Sequencing, Audio, 2D, Terrain, AI,
+            // Analysis ...); paket / sürüm denetimi pencereleri Unity'deki gibi üst düzeyde
+            if (ImGui::BeginMenu("General"))
+            {
+                // Unity Window > General > Scene / Game gibi: açar ve öne getirir (başka sekmenin arkasında kalmışsa da görünür olur)
+                if (ImGui::MenuItem("Viewport", nullptr, m_ShowViewport))
+                {
+                    m_ShowViewport = true;
+                    m_PendingFocusWindow = "Viewport";
+                }
+                if (ImGui::MenuItem("Game", nullptr, m_ShowGame))
+                {
+                    m_ShowGame = true;
+                    m_PendingFocusWindow = "Game";
+                }
+                ImGui::MenuItem("Hierarchy", nullptr, &m_ShowHierarchy);
+                ImGui::MenuItem("Inspector", nullptr, &m_ShowInspector);
+                ImGui::MenuItem("Content Browser", nullptr, &m_ShowContentBrowser);
+                ImGui::MenuItem("Log", nullptr, &m_ShowLog);
+                ImGui::MenuItem("Console (Terminal)", nullptr, &m_ShowConsole);
+                ImGui::MenuItem("Project Settings", nullptr, &m_ShowProjectSettings);
+                ImGui::MenuItem("Stats", nullptr, &m_ShowStats);
+                if (m_TestRunnerPanel)
+                    ImGui::MenuItem("Test Runner", nullptr, &m_TestRunnerPanel->GetIsOpen());
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Rendering"))
+            {
+                ImGui::MenuItem("Lighting", nullptr, &m_ShowLighting);
+                ImGui::MenuItem("Occlusion Culling", nullptr, &m_ShowOcclusion);
+                ImGui::MenuItem("Shader Graph", nullptr, &m_ShowShaderGraph);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Animation"))
+            {
+                ImGui::MenuItem("Animation", "Ctrl+6", &m_ShowAnimation);
+                if (ImGui::MenuItem("Animator"))
+                {
+                    if (m_AnimatorPanel) m_AnimatorPanel->SetOpen(true);
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Sequencing"))
+            {
+                ImGui::MenuItem("Timeline", nullptr, &m_ShowTimeline);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Audio"))
+            {
+                ImGui::MenuItem("Audio Mixer", nullptr, &m_ShowAudioMixer);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("2D"))
+            {
+                // 281: panelin adı "Palette" (Tiles, UI, Blueprint, Shader kategorileri); varlık türü yine "Tile Palette"
+                if (ImGui::MenuItem("Palette", nullptr, m_ShowTilePalette))
+                {
+                    m_ShowTilePalette = !m_ShowTilePalette;
+                    if (m_ShowTilePalette)
+                        m_PendingFocusWindow = "###TilePalette";
+                }
+                ImGui::MenuItem("Sprite Editor", nullptr, &m_ShowSpriteEditor);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Terrain"))
+            {
+                ImGui::MenuItem("Terrain", nullptr, &m_ShowTerrain);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Scripting"))
+            {
+                if (m_CodeEditorPanel)
+                    ImGui::MenuItem("Code Editor", nullptr, &m_CodeEditorPanel->GetIsOpen());
+                if (m_VisualScriptPanel)
+                    ImGui::MenuItem("Visual Script", nullptr, &m_VisualScriptPanel->GetIsOpen());
+                if (m_NodeAssetPanel)
+                    ImGui::MenuItem("Graph Editor", nullptr, &m_NodeAssetPanel->GetIsOpen());
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("AI"))
+            {
+                ImGui::MenuItem("Navigation", nullptr, &m_ShowNavigation);
+                ImGui::MenuItem("AI Assistant", nullptr, &m_ShowAIPanel);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Analysis"))
+            {
+                ImGui::MenuItem("Profiler", "Ctrl+7", &m_ShowProfiler);
+                ImGui::MenuItem("Import Activity", nullptr, &m_ShowImportActivity);
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Multiplayer"))
+            {
+                ImGui::MenuItem("Multiplayer", nullptr, &m_ShowMultiplayer);
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
             ImGui::MenuItem("Addon Manager", nullptr, &m_ShowAddonManager);
-            ImGui::MenuItem("Import Activity", nullptr, &m_ShowImportActivity);
-            ImGui::MenuItem("Project Settings", nullptr, &m_ShowProjectSettings);
-            ImGui::MenuItem("Log", nullptr, &m_ShowLog);
-            ImGui::MenuItem("Console (Terminal)", nullptr, &m_ShowConsole);
-            ImGui::MenuItem("Content Browser", nullptr, &m_ShowContentBrowser);
-            if (ImGui::MenuItem("Animator"))
-            {
-                if (m_AnimatorPanel) m_AnimatorPanel->SetOpen(true);
-            }
-            ImGui::MenuItem("Shader Graph", nullptr, &m_ShowShaderGraph);
-            ImGui::MenuItem("Navigation", nullptr, &m_ShowNavigation);
-            if (m_CodeEditorPanel)
-                ImGui::MenuItem("Code Editor", nullptr, &m_CodeEditorPanel->GetIsOpen());
-            if (m_VisualScriptPanel)
-                ImGui::MenuItem("Visual Script", nullptr, &m_VisualScriptPanel->GetIsOpen());
-            if (m_NodeAssetPanel)
-                ImGui::MenuItem("Graph Editor", nullptr, &m_NodeAssetPanel->GetIsOpen());
-            if (m_TestRunnerPanel)
-                ImGui::MenuItem("Test Runner", nullptr, &m_TestRunnerPanel->GetIsOpen());
             ImGui::MenuItem("Version Control", nullptr, &VersionControlPanel::Get().GetIsOpen());
-            ImGui::MenuItem("AI Assistant", nullptr, &m_ShowAIPanel);
-            ImGui::MenuItem("Stats", nullptr, &m_ShowStats);
-            // Unity Window > General > Scene / Game gibi: açar ve öne getirir (başka sekmenin arkasında kalmışsa da görünür olur)
-            if (ImGui::MenuItem("Game", nullptr, m_ShowGame))
-            {
-                m_ShowGame = true;
-                m_PendingFocusWindow = "Game";
-            }
-            if (ImGui::MenuItem("Viewport", nullptr, m_ShowViewport))
-            {
-                m_ShowViewport = true;
-                m_PendingFocusWindow = "Viewport";
-            }
             ImGui::Separator();
             if (ImGui::MenuItem("Reset Layout", nullptr, false))
             {
@@ -4376,8 +4455,17 @@ namespace Conqueror::Editor
     {
         // Prefab Mode açıkken kapatma: prefab kaydedilir, sahneye dönülür; sonra sahnenin kaydedilmemiş değişiklikleri sorulur
         ClosePrefabMode(true);
-        if (m_CloseConfirmed || Automation::IsActive() || !HasUnsavedChanges())
+        if (m_CloseConfirmed || (Automation::IsActive() && !m_AutomationClosePrompt) || !HasUnsavedChanges())
             return true;
+        // 283: kaydetme sorusu açıkken pencerenin çarpısına yeniden basılırsa "Don't Save" seçilmiş gibi kaydetmeden kapanır
+        if (m_PendingAction == PendingSceneAction::Close)
+        {
+            if (!m_CurrentScenePath.empty())
+                RemoveRecoverySnapshot(m_CurrentScenePath);
+            m_PendingAction = PendingSceneAction::None;
+            m_CloseConfirmed = true;
+            return true;
+        }
         m_PendingAction = PendingSceneAction::Close;
         m_OpenUnsavedPopup = true;
         return false;
@@ -8809,6 +8897,17 @@ namespace Conqueror::Editor
             Automation::Report(buf);
             for (int c = 0; c < 3; ++c)
                 if (std::abs(rgb[c] - std::stof(a[2 + c])) > tol) { err = std::string("thumbnail top is ") + buf; return false; }
+            return true;
+        });
+        // close_prompt on|off: otomasyonda da pencere kapatılırken kaydedilmemiş değişiklik sorusu çıksın (283 testi);
+        // window_close: pencerenin çarpısına basmak gibi (Application::Close, katmanlar kapanmayı erteleyebilir)
+        Automation::RegisterCommand("close_prompt", [this](const Args& a, std::string& err) {
+            if (a.size() < 2) { err = "close_prompt on|off"; return false; }
+            m_AutomationClosePrompt = a[1] == "on";
+            return true;
+        });
+        Automation::RegisterCommand("window_close", [](const Args&, std::string&) {
+            Application::Get().Close(false);
             return true;
         });
         // viewport_depth <u> <v> mark | expect_same | expect_diff [tolerans]: Viewport'un sahne derinliği (TAA'nın geri izlemede kullandığı) bu noktada;

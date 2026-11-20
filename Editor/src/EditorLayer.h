@@ -275,6 +275,8 @@ namespace Conqueror::Editor
         bool m_ShowSpriteEditor = false;
         bool m_ShowTerrain = true;
         bool m_ShowTilePalette = false;
+        bool m_PaletteWasShown = false;
+        void DockPaletteNextToTerrain();   // 282
         bool m_ShowAddonManager = false;
         bool m_ShowProjectSettings = true;
         bool m_ShowStats = true;
@@ -309,6 +311,7 @@ namespace Conqueror::Editor
         std::string m_NewSceneChoice = "builtin:basic";
         std::string m_PendingNewSceneChoice = "builtin:basic";
         bool m_CloseConfirmed = false;
+        bool m_AutomationClosePrompt = false;   // otomasyonda da kapatma sorusu (283 testi)
         const float m_AutoSaveInterval = 300.0f; // 5 dakika (300 saniye)
         
         // FPS tracking

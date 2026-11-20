@@ -1,0 +1,15 @@
+# template: basic3d
+# 283: kaydedilmemiş değişiklik varken pencerenin çarpısına basınca "Unsaved Changes" sorusu çıkar; soru açıkken çarpıya yeniden
+# basılınca editör "Don't Save" seçilmiş gibi kaydetmeden kapanır (ikinci kapatmadan sonraki satırlar hiç çalışmamalı)
+wait 30
+close_prompt on
+create_primitive Cube Box 0 0.5 0
+wait 5
+window_close
+wait 5
+expect_popup any
+window_close
+wait 5
+log editor_still_open_after_second_close
+expect_entities 99 Box
+quit
