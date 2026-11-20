@@ -251,8 +251,6 @@ namespace Conqueror
         DestroyTarget(m_FSR2Hold);
         DestroyTarget(m_FSR2HoldState[0]);
         DestroyTarget(m_FSR2HoldState[1]);
-        DestroyTarget(m_FSR2HoldCounters[0]);
-        DestroyTarget(m_FSR2HoldCounters[1]);
         for (uint32_t& fb : m_FSR2HoldFramebuffer)
         {
             if (fb)
@@ -1983,19 +1981,20 @@ namespace Conqueror
                 auto hold = PostProcess::GetShader("FSR2Hold");
                 if (nativeFSR && Valid(hold))
                 {
+                    // Kamera dururken derinlik kenarlarında (ince boşluk, merdiven) FSR 2 çıktısının yavaş ortalaması: FSR 2 piksel altı boşlukta
+                    // geçmişi tutup atarak 8 kareye yakın basamaklarla 30-70 seviye sıçrıyordu (FSR AA + NIS'te yavaş yanıp sönme). Işık
+                    // değişen karede (namlu alevi) ve hareket eden nesnenin yakınında ortalama yapılmaz
+                    const bool lightingChanged = Renderer3D::ConsumeLightingChange(this);
                     const uint32_t next = 1u - m_FSR2HoldIndex;
                     EnsureTarget(m_FSR2Hold, fsrW, fsrH, GL_RGBA8);
                     EnsureTarget(m_FSR2HoldState[0], fsrW, fsrH, GL_RGBA16F);
                     EnsureTarget(m_FSR2HoldState[1], fsrW, fsrH, GL_RGBA16F);
-                    EnsureTarget(m_FSR2HoldCounters[0], fsrW, fsrH, GL_RGBA16F);
-                    EnsureTarget(m_FSR2HoldCounters[1], fsrW, fsrH, GL_RGBA16F);
                     if (!m_FSR2HoldFramebuffer[next])
                         glCreateFramebuffers(1, &m_FSR2HoldFramebuffer[next]);
-                    const GLenum buffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-                    glNamedFramebufferDrawBuffers(m_FSR2HoldFramebuffer[next], 3, buffers);
+                    const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+                    glNamedFramebufferDrawBuffers(m_FSR2HoldFramebuffer[next], 2, buffers);
                     glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT0, m_FSR2Hold.Texture, 0);
                     glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT1, m_FSR2HoldState[next].Texture, 0);
-                    glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT2, m_FSR2HoldCounters[next].Texture, 0);
                     glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2HoldFramebuffer[next]);
                     glViewport(0, 0, (GLsizei)fsrW, (GLsizei)fsrH);
                     hold->Bind();
@@ -2005,14 +2004,12 @@ namespace Conqueror
                     hold->SetInt("u_Motion", 3);
                     hold->SetInt("u_Reactive", 4);
                     hold->SetInt("u_HasReactive", fsrReactive ? 1 : 0);
-                    hold->SetInt("u_Hold", ((m_CameraStill || m_CameraNearlyStill) && m_FSR2HoldValid && !prm.Reset) ? 1 : 0);
+                    hold->SetInt("u_Hold", ((m_CameraStill || m_CameraNearlyStill) && m_FSR2HoldValid && !prm.Reset && !lightingChanged) ? 1 : 0);
                     hold->SetFloat2("u_Texel", glm::vec2(1.0f / (float)fsrW, 1.0f / (float)fsrH));
                     hold->SetFloat("u_Near", m_FinalNear);
                     hold->SetFloat("u_Far", m_FinalFar);
                     BindTexture(0, m_FSR2Output.Texture);
                     BindTexture(1, m_FSR2HoldState[m_FSR2HoldIndex].Texture);
-                    hold->SetInt("u_Counters", 5);
-                    BindTexture(5, m_FSR2HoldCounters[m_FSR2HoldIndex].Texture);
                     BindTexture(2, GetSceneDepthTexture());
                     BindTexture(3, m_MotionVectors.Texture);
                     BindTexture(4, fsrReactive);

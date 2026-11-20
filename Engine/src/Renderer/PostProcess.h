@@ -209,10 +209,9 @@ namespace Conqueror
         RenderTarget m_FSR2Output;
         // FSR AA kamera dururken ince boşluk tutucu (260): gösterilen renk + durum (ortalama, varyans), iki durum dönüşümlü
         RenderTarget m_FSR2Hold;
-        RenderTarget m_FSR2HoldState[2];
-        RenderTarget m_FSR2HoldCounters[2];   // kenar yaşı, art arda aykırı kare, son hareketten beri geçen kare
-        uint32_t m_FSR2HoldFramebuffer[2] = { 0, 0 };
+        RenderTarget m_FSR2HoldState[2];       // FSR AA kenar ortalaması (rgb)
         uint32_t m_FSR2HoldIndex = 0;
+        uint32_t m_FSR2HoldFramebuffer[2] = { 0, 0 };
         bool m_FSR2HoldValid = false;
         // Ekranda 0.02 pikselden az kayan kamera (oyundaki karakter denetleyicisinin kayan nokta kıpırtısı katı m_CameraStill'i bozar)
         bool m_CameraNearlyStill = false;

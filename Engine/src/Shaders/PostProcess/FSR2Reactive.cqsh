@@ -63,8 +63,16 @@ void main()
         {
             if (vel.w > 1.5)
                 reactive = 1.0;
-            else if (dot(vel.xy, vel.xy) > 1e-10)
-                reactive = max(reactive, 0.5);
+            else
+            {
+                // Piksel altı kıpırtı (uykuya dalan fizik küpü) yalnız hafif işaretlenir (0.1: FSR 2 geçmişe biraz daha az güvenir);
+                // ince boşluk tutucusu 0.15'in altını hareket saymaz (küplerin arasındaki boşlukta devre dışı kalıyordu)
+                vec2 px = vel.xy * vec2(textureSize(u_Velocity, 0));
+                if (dot(px, px) > 0.0625)
+                    reactive = max(reactive, 0.3);
+                else if (dot(px, px) > 0.0)
+                    reactive = max(reactive, 0.1);
+            }
         }
     }
     float depth = texture(u_Depth, v_UV).r;
