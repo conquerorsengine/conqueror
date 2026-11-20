@@ -162,7 +162,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "SUNNY MEADOW"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 34
@@ -246,7 +246,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "1-1   SUNNY START"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 30
@@ -287,7 +287,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NEW"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 26
@@ -371,7 +371,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "1-2   WINDY HILLS"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 30
@@ -412,7 +412,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NEW"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 26
@@ -453,7 +453,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "GLOWCAP CAVES"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 34
@@ -537,7 +537,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "2-1   GLOWCAP CAVERN"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 30
@@ -578,7 +578,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NEW"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 26
@@ -662,7 +662,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "2-2   CRYSTAL DEPTHS"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 30
@@ -703,7 +703,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NEW"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 26
@@ -744,7 +744,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "CLOUD KINGDOM"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 34
@@ -828,7 +828,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "3-1   CLOUD RUINS"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 30
@@ -869,7 +869,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NEW"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 26
@@ -953,7 +953,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "3-2   LANTERN PEAK"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 30
@@ -994,7 +994,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NEW"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 26
@@ -1035,7 +1035,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "SUN SHARDS 0 / 18      EMBERS 0      GOLD FLAMES 0 / 6"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 32

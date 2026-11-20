@@ -811,9 +811,28 @@ EntitySetComponentField(fade, "UIImage", "CornerRadius", 0);
 // Sahnede saydam kaydedilir (editörde menü görünsün); ParkourMenu.cqs açılışta 1 yapıp siyahtan açar
 EntitySetColor(fade, 0, 0, 0, 0);
 EntitySetComponentField(fade, "UIImage", "RaycastTarget", false);
-CreateEntity("BuildSceneDone");
 """.replace("CATEGORY_COUNT", str(len(CATEGORIES))))
+    L.append(menu_placeholders(data))
+    L.append('CreateEntity("BuildSceneDone");\n')
     return "".join(L)
+
+
+def menu_placeholders(data):
+    """296: menü kutularına örnek yazılar (editörde ve UI Editor'de boş görünmesin, Unreal UMG'deki tasarım yazıları gibi).
+    ParkourMenu.cqs oyunda hepsinin üstüne yazar, kullanılmayan seviye kutularını gizler."""
+    cats = []
+    for c in data.split(";"):
+        name, _, lv = c.partition(":")
+        cats.append((name, [l.split("|")[2] for l in lv.split(",") if l.count("|") >= 2]))
+    out = []
+    for i, (name, lv) in enumerate(cats):
+        out.append(f'UISetText("CatBtn{i}", "{name}   0/{len(lv)}");\n')
+    out.append(f'UISetText("CategoryTitle", "{cats[0][0]}");\n')
+    for i, n in enumerate(cats[0][1][:4]):
+        out.append(f'UISetText("LvlBtn{i}", "    {i + 1}    {n}");\nUISetText("LvlInfo{i}", "NOT FINISHED");\n')
+    total = sum(len(lv) for _, lv in cats)
+    out.append(f'UISetText("MedalText", "GOLD 0     SILVER 0     BRONZE 0     OF {total}");\n')
+    return "".join(out)
 
 
 def main():

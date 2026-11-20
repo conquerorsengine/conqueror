@@ -205,7 +205,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "SKYLINE   0/4"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 24
@@ -289,7 +289,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NEON NIGHT   0/4"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 24
@@ -373,7 +373,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "DESERT RUINS   0/4"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 24
@@ -457,7 +457,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "ARCTIC PEAKS   0/4"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 24
@@ -541,7 +541,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "FOUNDRY   0/4"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 24
@@ -625,7 +625,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "JUNGLE TEMPLE   0/4"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 24
@@ -666,7 +666,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "SKYLINE"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 40
@@ -750,7 +750,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "    1    FIRST STEPS"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 28
@@ -791,7 +791,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NOT FINISHED"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 24
@@ -875,7 +875,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "    2    ROOFTOP DASH"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 28
@@ -916,7 +916,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NOT FINISHED"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 24
@@ -1000,7 +1000,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "    3    CRANE HOPS"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 28
@@ -1041,7 +1041,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NOT FINISHED"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 24
@@ -1125,7 +1125,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "    4    SKYLINE RUN"
       FontPath: Assets/Fonts/Orbitron.ttf
       ColorGradient: ""
       FontSize: 28
@@ -1166,7 +1166,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "NOT FINISHED"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 24
@@ -1207,7 +1207,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UITextComponent:
-      Text: ""
+      Text: "GOLD 0     SILVER 0     BRONZE 0     OF 24"
       FontPath: Assets/Fonts/RussoOne.ttf
       ColorGradient: ""
       FontSize: 26

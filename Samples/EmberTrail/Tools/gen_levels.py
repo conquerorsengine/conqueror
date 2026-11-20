@@ -360,8 +360,14 @@ for (var w = 0; w < 3; w++)
 Anchor(Txt("MenuTotals", root, "", 0, 120, 1600, 50, 32, cream, "Center", FONT), 0.5, 0);
 Anchor(Txt("MenuHint", root, "ARROWS + ENTER  OR  MOUSE        ESC  QUIT", 0, 60, 1600, 40, 24, dim, "Center", FONT), 0.5, 0);
 Fade(canvas);
-CreateEntity("BuildSceneDone");
 ''')
+    # 296: menü kutularına örnek yazılar (editörde ve UI Editor'de boş görünmesin); EmberMenu.cqs oyunda hepsinin üstüne yazar
+    for i, (scene, title, world, _) in enumerate(levels):
+        if i % 2 == 0:
+            out.append(f'UISetText("WorldLabel{i // 2}", "{L.WORLDS[world]["title"]}");\n')
+        out.append(f'UISetText("LvlBtn{i}", "{i // 2 + 1}-{i % 2 + 1}   {title}");\nUISetText("LvlInfo{i}", "NEW");\n')
+    out.append(f'UISetText("MenuTotals", "SUN SHARDS 0 / {len(levels) * 3}      EMBERS 0      GOLD FLAMES 0 / {len(levels)}");\n')
+    out.append('CreateEntity("BuildSceneDone");\n')
     return "".join(out)
 
 
