@@ -31,6 +31,18 @@ uniform int u_UseMotionMask = 0;
 uniform int u_CameraStill = 0;
 // 1: yalnız TAA'nın geçmişini reddettiği (yeni açılan / yüzeyi değişen) pikseller (durum x >= 1.5); TAA modunda
 uniform int u_RejectOnly = 0;
+// 286: yalnız geometri kenarlarında (iç çözünürlükteki derinlikte kesinti) uygulanır: NIS büyütmesinden sonra duvar üstü gibi
+// silüetlerin basamaklarını yumuşatır, zemin / küp dokularının NIS keskinliğine dokunmaz (tam ekran FXAA ayrıntının ~%15'ini alıyordu)
+uniform int u_DepthEdgeOnly = 0;
+uniform sampler2D u_EdgeDepth;
+uniform vec2 u_EdgeDepthTexel;
+uniform float u_EdgeNear = 0.1;
+uniform float u_EdgeFar = 1000.0;
+float EdgeLinearDepth(float d)
+{
+    float z = d * 2.0 - 1.0;
+    return 2.0 * u_EdgeNear * u_EdgeFar / max(u_EdgeFar + u_EdgeNear - z * (u_EdgeFar - u_EdgeNear), 1e-6);
+}
 
 // Kalite ayarları (FXAA 3.11 belgesindeki "yüksek kalite" değerleri)
 const float kSubpix = 0.75;               // alt piksel yumuşatma miktarı
@@ -184,6 +196,22 @@ vec3 FxaaPixelShader(vec2 pos, vec2 rcpFrame)
 void main()
 {
     vec3 original = texture(u_ScreenTexture, v_TexCoord).rgb;
+    if (u_DepthEdgeOnly == 1)
+    {
+        float zMin = 1e30, zMax = 0.0;
+        for (int y = -1; y <= 1; ++y)
+            for (int x = -1; x <= 1; ++x)
+            {
+                float z = EdgeLinearDepth(texture(u_EdgeDepth, v_TexCoord + vec2(x, y) * u_EdgeDepthTexel).r);
+                zMin = min(zMin, z);
+                zMax = max(zMax, z);
+            }
+        if (zMax <= zMin * 1.05 + 0.02)
+        {
+            FragColor = vec4(original, 1.0);
+            return;
+        }
+    }
     if (u_UseMotionMask == 1)
     {
         // TAA + FXAA: kamera dururken TAA zaten zamansal yumuşatmayı tamamlar; durağan görüntüye dokunulmaz

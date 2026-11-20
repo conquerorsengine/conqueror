@@ -1411,9 +1411,14 @@ namespace Conqueror
 
     // TAA hareket keskinliği: kamera hareket ederken TAA keskinleştirmesine eklenen miktar (Sharpen.cqsh, 0..1)
     static constexpr float kTAAMotionSharpen = 0.6f;
-    // NIS keskinliği yükseltme keskinliğinin yarısı: düşük çözünürlüklü görüntüyü büyütürken tam keskinlik basamakları (duvar üstü,
-    // ince ızgara çizgileri) yerel çözünürlükte olmayan merdivenlere çeviriyordu
-    static constexpr float kNISSharpnessScale = 0.5f;
+    // NIS keskinliği Upscaling Sharpness'ın 0.75 katı. Eskiden yarısıydı ve çıktının tamamı FXAA'dan geçiyordu: TAA + NIS (67%) yerel
+    // çözünürlüğün ayrıntısının yalnız %72-82'sini gösteriyordu (286). Şimdi %80-92; tam keskinlik (%86-101) duran görüntüde TAA'nın kalan
+    // titreşimini doğal TAA'nın üstüne büyütüyordu (>16 seviye %0.033, 0.75'te %0.016, doğal TAA %0.026). Basamaklar (149) yalnız geometri
+    // kenarlarına uygulanan FXAA ile yumuşatılır
+    static constexpr float kNISSharpnessScale = 0.75f;
+    // FSR AA + NIS: FSR 2'nin çıktısı TAA'nınkinden keskin (tam keskinlikte doğal çözünürlüğün ayrıntısının %107'si, aşırı); yarı keskinlik
+    // hem doğal ayrıntıya denk gelir hem FSR 2'nin kalan titreşimini daha az büyütür (fsraa_flicker)
+    static constexpr float kNISSharpnessScaleFSR = 0.5f;
 
     void PostProcessStack::RunFinal(const PostProcessSettings& settings, uint32_t outputFramebuffer, const int outputViewport[4])
     {
@@ -2296,7 +2301,7 @@ namespace Conqueror
                 PostProcess::DrawFullscreenQuad();
                 Renderer::GetStats().PostProcessPasses++;
             }
-            else if (up == UpscalerMode::NIS && Valid(nis) && NISUpscale(cur, outW, outH, kNISSharpnessScale * upSharp))
+            else if (up == UpscalerMode::NIS && Valid(nis) && NISUpscale(cur, outW, outH, (m_UseFSR2 ? kNISSharpnessScaleFSR : kNISSharpnessScale) * upSharp))
             {
                 // NIS çıktısı çıktı boyutunda ara hedefte: çıktıya FXAA ile. NIS'in yön duyarlı büyütmesi iç çözünürlüğün kenarlarını
                 // (duvar üstü) çıktıda 1.5 piksellik basamaklara çeviriyordu; çıktı çözünürlüğündeki FXAA bu basamakları yumuşatır
@@ -2306,12 +2311,24 @@ namespace Conqueror
                 copy->Bind();
                 copy->SetInt("u_ScreenTexture", 0);
                 copy->SetFloat2("u_InverseScreenSize", glm::vec2(1.0f / oW, 1.0f / oH));
+                const uint32_t edgeDepth = GetSceneDepthTexture();
                 if (fxaaOut)
+                {
                     copy->SetInt("u_UseMotionMask", 0);
+                    // Yalnız geometri kenarları (iç çözünürlüğün derinliğinde kesinti): dokular NIS keskinliğinde kalır
+                    copy->SetInt("u_DepthEdgeOnly", edgeDepth ? 1 : 0);
+                    copy->SetInt("u_EdgeDepth", 5);
+                    copy->SetFloat2("u_EdgeDepthTexel", glm::vec2(1.0f / (float)m_Width, 1.0f / (float)m_Height));
+                    copy->SetFloat("u_EdgeNear", m_FinalNear);
+                    copy->SetFloat("u_EdgeFar", m_FinalFar);
+                    BindTexture(5, edgeDepth);
+                }
                 else
                     copy->SetFloat("u_Amount", 0.0f);
                 BindTexture(0, m_Upscale.Texture);
                 PostProcess::DrawFullscreenQuad();
+                if (fxaaOut)
+                    copy->SetInt("u_DepthEdgeOnly", 0);
                 Renderer::GetStats().PostProcessPasses++;
             }
             else if ((up == UpscalerMode::Bilinear || up == UpscalerMode::NearestNeighbor || up == UpscalerMode::Lanczos || up == UpscalerMode::SGSR) &&

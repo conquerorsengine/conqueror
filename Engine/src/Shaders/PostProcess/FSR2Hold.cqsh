@@ -3,7 +3,8 @@
 // boşlukta (yan yana küplerin arası) FSR 2 geçmişi tutup atarak yaklaşık 8 karelik basamaklarla 30-70 seviye sıçrıyor; FSR AA + NIS'te
 // büyütme ve keskinleştirme bunu yavaş bir yanıp sönme olarak gösteriyordu. 5x5 komşulukta derinlik kesintisi olan piksellerde (kenar /
 // aralık) FSR çıktısının ~32 karelik üstel ortalaması gösterilir. Dokunulmayanlar: kamera hareketi, hareket eden nesnenin 5x5 yakını
-// (sürüklenen küpün kenarı, 287), ışığın değiştiği kare (C++: u_Hold = 0) ve 100 seviyeden büyük ani değişiklik
+// (sürüklenen küpün kenarı, 287), ışığın değiştiği kare (C++: u_Hold = 0) ve 100 seviyeden büyük ani değişiklik. Kenar dışı piksellerde
+// yalnız 8 seviyenin altındaki kıpırtı ~8 karede ortalanır (NIS'in keskinleştirmesi dokulardaki küçük titreşimi büyütmesin, 286)
 #type vertex
 #version 450 core
 layout(location = 0) in vec2 a_Position;
@@ -33,6 +34,8 @@ uniform float u_Far = 1000.0;
 
 const float kBlend = 1.0 / 32.0;   // ortalamaya giren yeni kare payı
 const float kJump = 0.4;           // bundan büyük fark gerçek değişiklik (100 / 255)
+const float kSmall = 8.0 / 255.0;      // kenar dışı: bu kadarlık kıpırtı titreşim sayılır (FSR 2'nin dokulardaki 2-4 seviyelik
+const float kSmallBlend = 1.0 / 8.0;   // kalıntısı; NIS keskinleştirmesi bunu 8+ seviyeye büyütüp dokuları kıpırdatıyordu, 286)
 const float kEdgeFade = 1.0 / 16.0; // kenar hafızası: kesinti görülmeden 16 kare daha kenar sayılır (titreşimle kenar / değil diye
                                     // gidip gelen piksel ortalama ile ham değer arasında atlayıp kendisi titriyordu)
 
@@ -67,7 +70,16 @@ void main()
     float edge = zMax > zMin * 1.08 + 0.02 ? 1.0 : max(state.a - kEdgeFade, 0.0);
     o_State = vec4(cur, edge);
     if (edge <= 0.0)
+    {
+        // Kenar dışı: yalnız küçük kıpırtı hızlıca ortalanır; büyük değişiklik (animasyon, ışık, doku) o karede geçer
+        vec3 d0 = abs(cur - state.rgb);
+        if (max(max(d0.r, d0.g), d0.b) > kSmall)
+            return;
+        vec3 calm = mix(state.rgb, cur, kSmallBlend);
+        o_Color = vec4(calm, 1.0);
+        o_State = vec4(calm, 0.0);
         return;
+    }
     vec3 diff = abs(cur - state.rgb);
     if (max(max(diff.r, diff.g), diff.b) > kJump)
         return;
