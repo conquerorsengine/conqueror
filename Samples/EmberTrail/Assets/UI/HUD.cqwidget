@@ -1592,7 +1592,7 @@ Entities:
       Rotation: 0
       Scale: [1, 1]
     UIImageComponent:
-      Color: [0, 0, 0, 1]
+      Color: [0, 0, 0, 0]
       TexturePath: ""
       SpriteName: ""
       Type: 0

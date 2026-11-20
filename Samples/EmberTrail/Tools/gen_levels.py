@@ -127,7 +127,9 @@ func Fade(canvas)
     EntitySetComponentField(fade, "RectTransform", "AnchorMax", {x: 1, y: 1});
     EntitySetComponentField(fade, "RectTransform", "SizeDelta", {x: 0, y: 0});
     EntitySetComponentField(fade, "UIImage", "CornerRadius", 0);
-    EntitySetColor(fade, 0, 0, 0, 1);
+    // Dosyada saydam (301): opak kaydedilince UI Editor'de bütün arayüzü örtüyordu. Oyunda EmberMenu / EmberGame her karede
+    // kararmayı kendisi yazar (açılışta 1'den 0'a)
+    EntitySetColor(fade, 0, 0, 0, 0);
     EntitySetComponentField(fade, "UIImage", "RaycastTarget", false);
     return fade;
 }
