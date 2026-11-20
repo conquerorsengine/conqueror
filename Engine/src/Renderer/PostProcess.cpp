@@ -1979,8 +1979,8 @@ namespace Conqueror
                 {
                     const uint32_t next = 1u - m_FSR2HoldIndex;
                     EnsureTarget(m_FSR2Hold, fsrW, fsrH, GL_RGBA8);
-                    EnsureTarget(m_FSR2HoldState[0], fsrW, fsrH, GL_RGBA16F);
-                    EnsureTarget(m_FSR2HoldState[1], fsrW, fsrH, GL_RGBA16F);
+                    EnsureTarget(m_FSR2HoldState[0], fsrW, fsrH, GL_RGBA32F);   // a: varyans + 2 x kenar yaşı (yarım hassasiyette varyans kayboluyordu)
+                    EnsureTarget(m_FSR2HoldState[1], fsrW, fsrH, GL_RGBA32F);
                     if (!m_FSR2HoldFramebuffer[next])
                         glCreateFramebuffers(1, &m_FSR2HoldFramebuffer[next]);
                     const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };

@@ -4,7 +4,13 @@
 // yanıp sönüyordu. Yalnız derinlik kesintisi olan, hareket vektörü sıfır ve tepki maskesi boş piksellerde FSR çıktısının zamansal
 // ortalaması gösterilir: piksel son karelerdeki salınım aralığının dışına çıkarsa (gerçek değişiklik: mermi izi, ışık açılması) geçmiş
 // hemen bırakılır. Yüzeydeki kasıtlı yanıp sönmeler (derinlik kesintisi yok) ve hareket eden her şey dokunulmadan geçer.
-// Çıktı 0: gösterilen renk; çıktı 1: durum (rgb ortalama, a parlaklık varyansı)
+// Piksel altı boşluk bazı jitter karelerinde derinlik tamponunda hiç görünmez (3x3'te kesinti yok): son 8 karede kesinti görülen piksel
+// kenar sayılmaya devam eder, ortalama o karelerde sıfırlanmaz (yoksa boşluk geri gelince yeniden sıçrıyordu; görünümün boyutuna göre
+// FSR AA + NIS'te belirgin titreme, fsraa_flicker)
+// Boşluk 8 jitter fazından yalnız birinde açılabilir: o tek karelik sıçrama "gerçek değişiklik" sayılıp kabul edilince boşluk her turda
+// yanıp sönüyordu. Salınım aralığı dışındaki değer ancak 3 kare üst üste sürerse kabul edilir; o zamana kadar ortalamaya katılır ve
+// varyansı büyütür (gerçek değişiklik: mermi izi, ışık; en çok 2 kare gecikir, parçacık / parlama tepki maskesiyle zaten geçer)
+// Çıktı 0: gösterilen renk; çıktı 1: durum (rgb ortalama, a = varyans + 2 x kenardan beri geçen kare (en çok 8) + 32 x art arda aykırı kare)
 #type vertex
 #version 450 core
 layout(location = 0) in vec2 a_Position;
@@ -40,6 +46,9 @@ float LinearDepth(float d)
 
 float Luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 
+const float kEdgeMemory = 8.0;   // kesinti görülmeden kenar sayılan kare sayısı
+const float kAcceptAfter = 3.0;  // aykırı değerin kabul edilmesi için art arda kare
+
 void main()
 {
     vec3 cur = texture(u_Current, v_UV).rgb;
@@ -47,9 +56,14 @@ void main()
     if (u_Hold == 0)
     {
         o_Color = vec4(cur, 1.0);
-        o_State = vec4(cur, 0.0);
+        o_State = vec4(cur, 2.0 * kEdgeMemory);
         return;
     }
+    // Durumun a kanalı: varyans (LDR parlaklık farkının karesi, < 1) + 2 x kenardan beri geçen kare + 32 x art arda aykırı kare
+    float outliers = floor(state.a / 32.0);
+    float rest = state.a - 32.0 * outliers;
+    float age = floor(rest * 0.5);
+    float stateVariance = rest - 2.0 * age;
     // Derinlik kesintisi (3x3, doğrusal derinlik oranı): yalnız nesne kenarları / aralıkları
     float zMin = 1e30, zMax = 0.0;
     for (int y = -1; y <= 1; ++y)
@@ -59,27 +73,44 @@ void main()
             zMin = min(zMin, z);
             zMax = max(zMax, z);
         }
-    bool edge = zMax > zMin * 1.08 + 0.02;
+    bool edgeNow = zMax > zMin * 1.08 + 0.02;
+    age = edgeNow ? 0.0 : min(age + 1.0, kEdgeMemory);
+    bool edge = age < kEdgeMemory;
     vec2 mv = texture(u_Motion, v_UV).xy / u_Texel;   // piksel
     float reactive = u_HasReactive == 1 ? texture(u_Reactive, v_UV).r : 0.0;
-    if (!edge || dot(mv, mv) > 0.01 || reactive > 0.02)
+    if (dot(mv, mv) > 0.01 || reactive > 0.02)
     {
         o_Color = vec4(cur, 1.0);
-        o_State = vec4(cur, 0.0);
+        o_State = vec4(cur, 2.0 * kEdgeMemory);
+        return;
+    }
+    if (!edge)
+    {
+        o_Color = vec4(cur, 1.0);
+        o_State = vec4(cur, 2.0 * age);
         return;
     }
     float d = Luma(cur) - Luma(state.rgb);
-    float sigma = sqrt(max(state.a, 0.0));
+    float sigma = sqrt(max(stateVariance, 0.0));
     if (abs(d) > 3.0 * sigma + 0.02)
     {
-        // Salınım aralığının dışında: gerçek değişiklik ya da ilk sıçrama. Görüntü hemen yeni değer; varyans sıçramayı öğrenir
-        // (yalnız geri dönerse ortalama başlar, kalıcı değişiklikte varyans birkaç karede söner)
-        o_Color = vec4(cur, 1.0);
-        o_State = vec4(cur, d * d);
+        outliers += 1.0;
+        if (outliers >= kAcceptAfter)
+        {
+            // Salınım aralığının dışında ve kalıcı: gerçek değişiklik. Görüntü yeni değer; varyans sıçramayı öğrenir
+            o_Color = vec4(cur, 1.0);
+            o_State = vec4(cur, min(d * d, 1.0) + 2.0 * age);
+            return;
+        }
+        // Tek tük aykırı kare (seyrek jitter fazı): ortalamaya katılır, varyans büyür; gösterilen ortalama
+        vec3 heldMean = mix(state.rgb, cur, 0.1);
+        float grown = min(mix(stateVariance, d * d, 0.25), 1.0);
+        o_Color = vec4(heldMean, 1.0);
+        o_State = vec4(heldMean, grown + 2.0 * age + 32.0 * outliers);
         return;
     }
     vec3 mean = mix(state.rgb, cur, 0.1);
-    float variance = mix(state.a, d * d, 0.1);
+    float variance = min(mix(stateVariance, d * d, 0.1), 1.0);
     o_Color = vec4(mean, 1.0);
-    o_State = vec4(mean, variance);
+    o_State = vec4(mean, variance + 2.0 * age);
 }
