@@ -190,12 +190,33 @@ jobs:
           fi
           app=$(ls -d ~/.cache/cq-build/regression/Reg_ios_simulator/Builds/iOS/*.app | head -1)
           python3 Tools/iOS/simulator_test.py "$app" --screenshot ios_simulator.png --wait 45
-      - name: Upload the iOS Simulator screenshot
+      - name: ARKit on the iOS Simulator (the AR template with ARKit on is built for iOS; the Simulator has no ARKit world tracking, so the game must start without crashing, render and report ARKit as unavailable)
+        if: ${{ !cancelled() }}
+        timeout-minutes: 90
+        run: |
+          set +e
+          CQ_TEST_IOS=1 CQ_IOS_BUILD_ROOT="$PWD/build-ios" python3 Tools/Tests/regression.py ios_simulator_ar
+          if [ $? -ne 0 ]; then
+            cat ~/.cache/cq-build/regression/_Reg_ios_simulator_ar.txt.result.txt
+            grep -E "package_ios|error:|Error|FAILED|iOS" build/bin/Conqueror.log | tail -150
+            exit 1
+          fi
+          app=$(ls -d ~/.cache/cq-build/regression/Reg_ios_simulator_ar/Builds/iOS/*.app | head -1)
+          python3 Tools/iOS/simulator_test.py "$app" --screenshot ios_simulator_ar.png --wait 45 --expect-log "\[ARKit\] This device does not support ARKit"
+      - name: ARKit camera image test (the YCbCr to RGB conversion and the screen rotation of the camera image with a synthetic frame)
+        if: ${{ !cancelled() }}
+        run: |
+          c++ -std=c++17 -Wall -Wextra -I Engine/src Tools/Tests/native/arkit_image_test.cpp -o arkit_image_test
+          ./arkit_image_test
+      - name: Upload the iOS Simulator screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-simulator-screenshot
-          path: ios_simulator.png
+          path: |
+            ios_simulator.png
+            ios_simulator_ar.png
+            ios_simulator_ar.log
           if-no-files-found: ignore
       - name: Status indicator test (the game's icon is really in the macOS menu bar; tooltip, icon and menu come from the component, a click and a menu item reach it)
         # Runs after a failed Metal / iOS step too; its own failure does not stop the steps above

@@ -7,6 +7,7 @@
 
 #include "Core/Logging/Log.h"
 #include "Platform/iOS/iOSPlatform.h"
+#include "Platform/iOS/ARKitImage.h"
 
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -98,26 +99,18 @@ namespace Conqueror::ARKitBridge
             }
             s_Rgba.resize((size_t)W * (size_t)H * 4);
             uint8_t* out = s_Rgba.data();
-            const CGAffineTransform t = toImage;
+            ARKitImage::Planes planes;
+            planes.Y = yPlane;
+            planes.YWidth = yw;
+            planes.YHeight = yh;
+            planes.YStride = yStride;
+            planes.CbCr = cPlane;
+            planes.CWidth = cw;
+            planes.CHeight = ch;
+            planes.CStride = cStride;
+            const ARKitImage::Affine t{ toImage.a, toImage.b, toImage.c, toImage.d, toImage.tx, toImage.ty };
             dispatch_apply((size_t)H, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0), ^(size_t row) {
-                uint8_t* dst = out + (size_t)(H - 1 - (int)row) * (size_t)W * 4;
-                const double vy = ((double)row + 0.5) / (double)H;
-                for (int x = 0; x < W; ++x)
-                {
-                    const double vx = ((double)x + 0.5) / (double)W;
-                    const double ix = t.a * vx + t.c * vy + t.tx, iy = t.b * vx + t.d * vy + t.ty;
-                    const int sx = std::clamp((int)(ix * yw), 0, yw - 1), sy = std::clamp((int)(iy * yh), 0, yh - 1);
-                    const float Y = (float)yPlane[(size_t)sy * yStride + (size_t)sx];
-                    const int cx = std::min(sx / 2, cw - 1), cy = std::min(sy / 2, ch - 1);
-                    const uint8_t* c = cPlane + (size_t)cy * cStride + (size_t)cx * 2;
-                    const float Cb = (float)c[0] - 128.0f, Cr = (float)c[1] - 128.0f;
-                    // BT.601 tam aralık (ARKit'in capturedImage biçimi; Apple'ın AR örneğindeki dönüşüm)
-                    const float r = Y + 1.402f * Cr, g = Y - 0.3441f * Cb - 0.7141f * Cr, b = Y + 1.772f * Cb;
-                    dst[x * 4 + 0] = (uint8_t)std::clamp(r, 0.0f, 255.0f);
-                    dst[x * 4 + 1] = (uint8_t)std::clamp(g, 0.0f, 255.0f);
-                    dst[x * 4 + 2] = (uint8_t)std::clamp(b, 0.0f, 255.0f);
-                    dst[x * 4 + 3] = 255;
-                }
+                ARKitImage::ConvertRow(planes, t, W, H, (int)row, out);
             });
             CVPixelBufferUnlockBaseAddress(pb, kCVPixelBufferLock_ReadOnly);
 

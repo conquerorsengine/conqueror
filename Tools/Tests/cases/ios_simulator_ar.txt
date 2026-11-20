@@ -1,0 +1,13 @@
+# template: ar
+# requires: CQ_TEST_IOS
+# 256: AR şablonu (Project Settings > XR > ARKit açık) iOS Simülatörü için derlenir. CI (macOS) Tools/iOS/simulator_test.py ile kurar,
+# başlatır: simülatörde ARKit dünya izleme yoktur, oyun çökmeden açılmalı, sahneyi çizmeli ve "[ARKit] This device does not support
+# ARKit world tracking" demeli (gerçek iPhone'da izleme, düzlemler ve kamera görüntüsü burada denenemez)
+timeout 5400
+wait 30
+build output Builds/iOS
+build platform iOS
+build start
+wait_until 5400000 build expect_done
+build expect_success
+quit

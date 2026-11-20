@@ -1,0 +1,5 @@
+# setup: sh -c "c++ -std=c++17 -Wall -Wextra -I {dir}/../../../Engine/src {dir}/../native/arkit_image_test.cpp -o {work}/arkit_image_test && {work}/arkit_image_test"
+# 256: ARKit kamera görüntüsü (YCbCr 4:2:0 -> RGB, ekran yönüne döndürme) sahte bir kareyle; gerçek iPhone gerekmez, her platformda
+# derlenip çalışır (Tools/Tests/native/arkit_image_test.cpp). Başarısız olursa kurulum adımı testi düşürür
+wait 5
+quit

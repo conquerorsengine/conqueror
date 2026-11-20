@@ -2,12 +2,15 @@
 """iOS Simülatöründe oyun testi (CI): uygulamayı kurar, başlatır, bekler, ekran görüntüsü alır ve sahnenin çizildiğini denetler
 (siyah / tek renk değil, uygulama hâlâ çalışıyor). Başarısızlıkta uygulamanın son günlük satırlarını yazar.
 
-  python3 Tools/iOS/simulator_test.py <MyGame.app> --screenshot shot.png [--wait 40]
+  python3 Tools/iOS/simulator_test.py <MyGame.app> --screenshot shot.png [--wait 40] [--expect-log REGEX]
+
+--expect-log: the game's own log (stdout / stderr of the app) must contain a line matching REGEX (e.g. the ARKit state).
 """
 
 import argparse
 import json
 import plistlib
+import re
 import struct
 import subprocess
 import sys
@@ -86,6 +89,7 @@ def main():
     ap.add_argument("app", type=Path)
     ap.add_argument("--screenshot", type=Path, required=True)
     ap.add_argument("--wait", type=float, default=40.0)
+    ap.add_argument("--expect-log", default=None)
     args = ap.parse_args()
 
     bundle_id = plistlib.load(open(args.app / "Info.plist", "rb"))["CFBundleIdentifier"]
@@ -99,7 +103,11 @@ def main():
     sh(["xcrun", "simctl", "boot", udid], check=False)
     sh(["xcrun", "simctl", "bootstatus", udid, "-b"])
     sh(["xcrun", "simctl", "install", udid, args.app])
-    launched = sh(["xcrun", "simctl", "launch", udid, bundle_id])
+    out_log = Path(args.screenshot).with_suffix(".log")
+    launch = ["xcrun", "simctl", "launch"]
+    if args.expect_log:
+        launch += [f"--stdout={out_log}", f"--stderr={out_log}"]
+    launched = sh(launch + [udid, bundle_id])
     pid = launched.stdout.strip().split(":")[-1].strip()
     log(f"Started {bundle_id} (pid {pid}), waiting {args.wait:.0f} s")
     time.sleep(args.wait)
@@ -109,6 +117,15 @@ def main():
     width, height, mean, std = png_stats(args.screenshot)
     log(f"Screenshot {width}x{height}: mean {mean:.1f}, std {std:.1f}, app running: {alive}")
     ok = alive and mean > 8.0 and std > 3.0
+    if args.expect_log:
+        text = out_log.read_text(errors="replace") if out_log.exists() else ""
+        hits = [l for l in text.splitlines() if re.search(args.expect_log, l)]
+        log(f"Game log: {len(text.splitlines())} lines, {len(hits)} matching {args.expect_log!r}")
+        for l in hits[:5]:
+            log("  " + l.strip())
+        if not hits:
+            print("\n".join(text.splitlines()[-80:]))
+            ok = False
     if not ok:
         logs = sh(["xcrun", "simctl", "spawn", udid, "log", "show", "--last", "3m", "--style", "compact", "--predicate",
                    'process == "conqueror"'], check=False).stdout
