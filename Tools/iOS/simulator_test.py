@@ -103,7 +103,8 @@ def main():
     sh(["xcrun", "simctl", "boot", udid], check=False)
     sh(["xcrun", "simctl", "bootstatus", udid, "-b"])
     sh(["xcrun", "simctl", "install", udid, args.app])
-    out_log = Path(args.screenshot).with_suffix(".log")
+    # Simülatör uygulamayı kendi tarafında başlatır: göreli yol orada çözülür, açılamayınca SpringBoard başlatmayı reddediyordu
+    out_log = Path(args.screenshot).resolve().with_suffix(".log")
     launch = ["xcrun", "simctl", "launch"]
     if args.expect_log:
         launch += [f"--stdout={out_log}", f"--stderr={out_log}"]
@@ -119,6 +120,11 @@ def main():
     ok = alive and mean > 8.0 and std > 3.0
     if args.expect_log:
         text = out_log.read_text(errors="replace") if out_log.exists() else ""
+        # Motorun kendi günlük dosyaları da (uygulamanın veri kapsayıcısında)
+        container = sh(["xcrun", "simctl", "get_app_container", udid, bundle_id, "data"], check=False).stdout.strip()
+        if container and Path(container).is_dir():
+            for f in sorted(Path(container).rglob("*.log"))[:20]:
+                text += "\n" + f.read_text(errors="replace")
         hits = [l for l in text.splitlines() if re.search(args.expect_log, l)]
         log(f"Game log: {len(text.splitlines())} lines, {len(hits)} matching {args.expect_log!r}")
         for l in hits[:5]:
