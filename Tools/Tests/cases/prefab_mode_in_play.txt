@@ -1,0 +1,23 @@
+# template: fps
+# 295: oyun çalışırken widget'a / prefab'a tıklayınca hiçbir şey açılmıyordu ("Stop Play mode before opening a prefab."). Unity'nin Play
+# Mode'daki Prefab Mode'u gibi açılır: oyun Game görünümünde sürer, Stop'tan sonra Prefab Mode açık kalır, çıkınca editör sahnesi
+wait 40
+focus Game
+play
+wait 60
+uieditor open_widget Assets/UI/HUD.cqwidget
+wait 10
+prefab_mode expect_active 1
+screenshot /tmp/claude-1000/-home-fazli-Masa-st--Conqueror-s-Engine/c94060ac-a1dd-44d4-b140-a70d25c1260b/scratchpad/r295/uieditor.png
+focus Game
+wait 60
+screenshot /tmp/claude-1000/-home-fazli-Masa-st--Conqueror-s-Engine/c94060ac-a1dd-44d4-b140-a70d25c1260b/scratchpad/r295/game.png
+stop
+wait 10
+prefab_mode expect_active 1
+prefab_mode close
+wait 10
+prefab_mode expect_active 0
+expect_entities 1 Player
+script_errors expect 0
+quit

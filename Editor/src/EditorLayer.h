@@ -99,7 +99,8 @@ namespace Conqueror::Editor
         {
             bool Active = false;
             std::filesystem::path Path;
-            std::shared_ptr<Scene> SavedScene;
+            std::shared_ptr<Scene> SavedScene;         // çıkınca gösterilecek sahne (oyun sırasında açıldıysa oyunun sahnesi)
+            std::shared_ptr<Scene> SavedEditorScene;   // düzenlenen sahne (Stop'ta dönülen; prefab kopyaları çıkınca burada yenilenir)
             std::filesystem::path SavedScenePath;
             std::vector<std::shared_ptr<EditorCommand>> SavedUndo, SavedRedo;
             std::vector<uint64_t> CleanInstances;   // açılırken prefab'den farkı olmayan sahne kopyaları: çıkınca güncellenir

@@ -2918,7 +2918,11 @@ namespace Conqueror::Editor
             m_RuntimeScene->StopAllAudio();
         }
         m_RuntimeScene = scene;
-        m_ActiveScene = scene;
+        // 295: oyun sırasında Prefab Mode açıksa paneller prefab'da kalır; çıkınca oyunun yeni sahnesi gösterilir
+        if (m_PrefabStage.Active)
+            m_PrefabStage.SavedScene = scene;
+        else
+            m_ActiveScene = scene;
         RefreshAllPanels();
         scene->OnRuntimeStart(false);
         SceneManager::SetActiveScenePath(path);
@@ -2962,8 +2966,14 @@ namespace Conqueror::Editor
             if (m_EditorScene)
                 m_EditorScene->StopAllAudio();
             
-            // Editor scene'e geri dön
-            m_ActiveScene = m_EditorScene;
+            // Editor scene'e geri dön. 295: oyun sırasında açılan Prefab Mode açık kalır (Unity gibi); çıkınca editör sahnesine dönülür
+            if (m_PrefabStage.Active)
+            {
+                m_PrefabStage.SavedScene = m_EditorScene;
+                m_EditorScene = m_ActiveScene;
+            }
+            else
+                m_ActiveScene = m_EditorScene;
             // 274: oyun durunca oyunda oluşan menü / HUD öğeleri silinir; Viewport'un zamansal geçmişi (TAA, FSR 2, TAAU ... hepsi)
             // sıfırlanır, yoksa menünün soluk izi bir an Viewport'ta kalıyordu
             if (m_ViewportPanel)
@@ -3776,11 +3786,10 @@ namespace Conqueror::Editor
 
     bool EditorLayer::OpenPrefabMode(const std::filesystem::path& path)
     {
-        if (!EditorState::Get().IsEditing())
-        {
-            CQ_CORE_WARN("Stop Play mode before opening a prefab.");
-            return false;
-        }
+        // 295: oyun çalışırken de açılır (Unity'nin Play Mode'daki Prefab Mode'u, Unreal'ın PIE sırasında Widget Blueprint editörü gibi):
+        // oyun Game görünümünde sürer, Viewport / Hierarchy / Inspector / UI Editor prefab'ı gösterir. Eskiden "Stop Play mode before
+        // opening a prefab." deyip açmıyordu (oyun sırasında widget'a tıklayınca UI Editor'de hiçbir şey açılmıyordu)
+        const bool playing = !EditorState::Get().IsEditing();
         if (m_PrefabStage.Active)
         {
             if (m_PrefabStage.Path == path)
@@ -3803,17 +3812,19 @@ namespace Conqueror::Editor
         s.Active = true;
         s.Path = path;
         s.SavedScene = m_ActiveScene;
+        s.SavedEditorScene = m_EditorScene;
         s.SavedScenePath = m_CurrentScenePath;
         s.RootID = (uint64_t)root.GetComponent<IDComponent>().ID;
         s.SavedText = ReadWholeFile(path);
-        // Sahnedeki, prefab'den farkı olmayan kopyalar (çıkınca yenilenecek)
-        if (m_ActiveScene)
+        // Sahnedeki, prefab'den farkı olmayan kopyalar (çıkınca yenilenecek). Oyun sırasında: düzenlenen sahnedekiler (Unity gibi
+        // çalışan oyundaki kopyalar değişmez, Stop'tan sonra sahne yeni prefab'i gösterir)
+        if (m_EditorScene)
         {
             const std::string rel = PrefabSerializer::ToProjectPath(path);
-            m_ActiveScene->m_Registry.view<PrefabInstanceComponent, IDComponent>().each([&](auto e, PrefabInstanceComponent& pi, IDComponent& id) {
+            m_EditorScene->m_Registry.view<PrefabInstanceComponent, IDComponent>().each([&](auto e, PrefabInstanceComponent& pi, IDComponent& id) {
                 if (pi.Prefab != rel && PrefabSerializer::Resolve(pi.Prefab) != path)
                     return;
-                Entity inst{ e, m_ActiveScene.get() };
+                Entity inst{ e, m_EditorScene.get() };
                 if (PrefabSerializer::FindInstanceRoot(inst) == inst && !PrefabSerializer::HasOverrides(inst))
                     s.CleanInstances.push_back((uint64_t)id.ID);
             });
@@ -3828,7 +3839,9 @@ namespace Conqueror::Editor
         }
         UndoRedoManager::Get().SwapStacks(s.SavedUndo, s.SavedRedo);
         m_ActiveScene = stage;
-        m_EditorScene = stage;
+        // Oyun sırasında düzenlenen sahne değişmez (Stop ona döner); oyunun sahnesi Game görünümünde çalışmaya devam eder
+        if (!playing)
+            m_EditorScene = stage;
         m_CurrentScenePath.clear();
         RefreshAllPanels();
         stage->UpdateWorldTransforms();
@@ -3899,14 +3912,14 @@ namespace Conqueror::Editor
         UndoRedoManager::Get().SwapStacks(s.SavedUndo, s.SavedRedo);
         EditorState::Get().ClearSelection();
         m_ActiveScene = s.SavedScene;
-        m_EditorScene = s.SavedScene;
+        m_EditorScene = s.SavedEditorScene ? s.SavedEditorScene : s.SavedScene;
         m_CurrentScenePath = s.SavedScenePath;
         HierarchyPanel::s_DrawStageHeader = nullptr;
-        // Sahnedeki değiştirilmemiş kopyalar yeni prefab'le
+        // Düzenlenen sahnedeki değiştirilmemiş kopyalar yeni prefab'le (oyun sırasında çalışan oyundakiler değil)
         int refreshed = 0;
-        if (m_ActiveScene && save)
+        if (m_EditorScene && save)
             for (uint64_t id : s.CleanInstances)
-                if (Entity inst = m_ActiveScene->FindEntityByUUID(id))
+                if (Entity inst = m_EditorScene->FindEntityByUUID(id))
                     if (PrefabSerializer::RevertInstance(inst))
                         ++refreshed;
         RefreshAllPanels();
@@ -9925,7 +9938,8 @@ namespace Conqueror::Editor
         if (m_HierarchyPanel) m_HierarchyPanel->SetContext(m_ActiveScene);
         if (m_InspectorPanel) m_InspectorPanel->SetContext(m_ActiveScene.get());
         if (m_ViewportPanel) m_ViewportPanel->SetContext(m_ActiveScene);
-        if (m_GamePanel) m_GamePanel->SetContext(m_ActiveScene);
+        // 295: oyun sırasında Prefab Mode açıkken Game görünümü oyunu çalıştırmaya devam eder
+        if (m_GamePanel) m_GamePanel->SetContext((m_PrefabStage.Active && m_RuntimeScene && !EditorState::Get().IsEditing()) ? m_RuntimeScene : m_ActiveScene);
         if (m_LightingPanel) m_LightingPanel->SetContext(m_ActiveScene);
         if (m_ProjectSettingsPanel) m_ProjectSettingsPanel->SetContext(m_ActiveScene);
         if (m_AnimatorPanel) m_AnimatorPanel->SetContext(m_ActiveScene.get());
