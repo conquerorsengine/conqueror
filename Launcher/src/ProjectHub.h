@@ -128,6 +128,9 @@ namespace Conqueror::Editor
         // İpuçları yalnızca fare Hub açıldıktan sonra gerçekten hareket ettiyse açılır: açılışta imleç zaten bir projenin
         // üstünde duruyorsa kutu kendiliğinden çıkmaz (Unity Hub / tarayıcılar gibi)
         bool m_PointerMoved = false;
+        int m_TipCard = -1;          // 284: üstünde durulan proje kartı ve ne zamandan beri (ipucu 1 sn sonra)
+        double m_TipSince = 0.0;
+        static constexpr double kCardTipDelay = 1.0;
         bool m_ShowMissing = true;
         float m_UIScale = 1.0f;
         std::string m_DefaultLocation;

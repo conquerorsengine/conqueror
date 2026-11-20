@@ -725,7 +725,17 @@ namespace Conqueror::Editor
         ImVec2 b(a.x + width, a.y + height);
         const bool clicked = ImGui::InvisibleButton("##card", ImVec2(width, height));
         const bool hovered = ImGui::IsItemHovered();
-        const bool showTip = m_PointerMoved && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip);
+        // 284: kartın yol / ipucu kutusu ancak fare kartın üstünde 1 saniye kalınca çıkar (kartların üstünden geçerken hemen açılıp
+        // kapanıyordu); başka karta geçince süre yeniden başlar
+        const double now = ImGui::GetTime();
+        if (hovered && m_TipCard != index)
+        {
+            m_TipCard = index;
+            m_TipSince = now;
+        }
+        else if (!hovered && m_TipCard == index)
+            m_TipCard = -1;
+        const bool showTip = m_PointerMoved && hovered && m_TipCard == index && now - m_TipSince >= kCardTipDelay;
         DrawProjectContextMenu(project, index);
         ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddRectFilled(a, b, hovered ? kCardHover : kCardBg, 10.0f);
