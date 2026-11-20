@@ -751,6 +751,65 @@ namespace Conqueror
         return (uint32_t)drawFBO == s_Current->m_SceneFramebuffer->GetRendererID();
     }
 
+    uint32_t PostProcessStack::RunStillHold(int owner, uint32_t source, uint32_t w, uint32_t h, uint32_t reactive, uint32_t motion, bool still, bool reset)
+    {
+        // Kamera dururken derinlik kenarlarında (ince boşluk, merdiven) zamansal yükselticinin çıktısının yavaş ortalaması ve kenar
+        // dışında 16 seviyeye kadar kıpırtının kısa ortalaması (FSR2Hold.cqsh). Işık değişen karede (namlu alevi) ve hareket eden
+        // nesnenin yakınında ortalama yapılmaz; kamera hareket ederken geçiş yalnız durumu yeniler. owner: 1 FSR 2, 2 SGSR 2
+        auto hold = PostProcess::GetShader("FSR2Hold");
+        if (!Valid(hold))
+        {
+            m_FSR2HoldValid = false;
+            return source;
+        }
+        // Başka yükselticinin durumu ya da araya giren karelerde (başka yöntem seçiliydi) eskiyen durum kullanılmaz
+        if (m_FSR2HoldOwner != owner || m_FSR2HoldFrame + 1 != m_FrameIndex)
+            m_FSR2HoldValid = false;
+        m_FSR2HoldOwner = owner;
+        m_FSR2HoldFrame = m_FrameIndex;
+        const bool lightingChanged = Renderer3D::ConsumeLightingChange(this);
+        const uint32_t next = 1u - m_FSR2HoldIndex;
+        EnsureTarget(m_FSR2Hold, w, h, GL_RGBA8);
+        EnsureTarget(m_FSR2HoldState[0], w, h, GL_RGBA16F);
+        EnsureTarget(m_FSR2HoldState[1], w, h, GL_RGBA16F);
+        if (!m_FSR2HoldFramebuffer[next])
+            glCreateFramebuffers(1, &m_FSR2HoldFramebuffer[next]);
+        const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+        glNamedFramebufferDrawBuffers(m_FSR2HoldFramebuffer[next], 2, buffers);
+        glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT0, m_FSR2Hold.Texture, 0);
+        glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT1, m_FSR2HoldState[next].Texture, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2HoldFramebuffer[next]);
+        glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+        hold->Bind();
+        hold->SetInt("u_Current", 0);
+        hold->SetInt("u_State", 1);
+        hold->SetInt("u_Depth", 2);
+        hold->SetInt("u_Motion", 3);
+        hold->SetInt("u_HasMotion", motion ? 1 : 0);
+        hold->SetInt("u_Reactive", 4);
+        hold->SetInt("u_HasReactive", reactive ? 1 : 0);
+        hold->SetInt("u_Velocity", 5);
+        hold->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
+        // Kamera durduktan sonra 20 kare beklenir: yükselticinin geçmişi hareketten sonra yakınsarken (kenarlar netleşirken) ortalama
+        // bu netleşmeyi geciktirirdi
+        m_FSR2HoldStillFrames = still ? m_FSR2HoldStillFrames + 1 : 0;
+        hold->SetInt("u_Hold", (still && m_FSR2HoldStillFrames > 20 && m_FSR2HoldValid && !reset && !lightingChanged) ? 1 : 0);
+        hold->SetFloat2("u_Texel", glm::vec2(1.0f / (float)w, 1.0f / (float)h));
+        hold->SetFloat("u_Near", m_FinalNear);
+        hold->SetFloat("u_Far", m_FinalFar);
+        BindTexture(0, source);
+        BindTexture(1, m_FSR2HoldState[m_FSR2HoldIndex].Texture);
+        BindTexture(2, GetSceneDepthTexture());
+        BindTexture(3, motion);
+        BindTexture(4, reactive);
+        BindTexture(5, m_FinalHasVelocity ? m_Velocity.Texture : 0);
+        PostProcess::DrawFullscreenQuad();
+        Renderer::GetStats().PostProcessPasses++;
+        m_FSR2HoldIndex = next;
+        m_FSR2HoldValid = true;
+        return m_FSR2Hold.Texture;
+    }
+
     void PostProcessStack::ResetTemporalHistory()
     {
         m_HistoryValid = false;
@@ -1982,55 +2041,10 @@ namespace Conqueror
                 // derinlik değişimini açığa çıkan yüzey sayıp geçmişi atıyor). Derinlik kesintili, durağan piksellerde FSR çıktısının zamansal
                 // ortalaması; hareket eden ya da gerçekten değişen pikseller dokunulmadan geçer (FSR2Hold.cqsh). Kamera hareket ederken
                 // geçiş yalnız durumu yeniler
-                uint32_t fsrResult = m_FSR2Output.Texture;
-                auto hold = PostProcess::GetShader("FSR2Hold");
                 // FSR 2 yükseltmede de (TAA + FSR 2, 288): iç çözünürlükten büyütürken merdiven basamakları ve zemin çizgileri 18 karelik
                 // titreşim döngüsüyle 10-15 seviye sıçrıyordu (duran görüntüde >8 seviye %0.98, TAAU %0.03)
-                if (Valid(hold))
-                {
-                    // Kamera dururken derinlik kenarlarında (ince boşluk, merdiven) FSR 2 çıktısının yavaş ortalaması: FSR 2 piksel altı boşlukta
-                    // geçmişi tutup atarak 8 kareye yakın basamaklarla 30-70 seviye sıçrıyordu (FSR AA + NIS'te yavaş yanıp sönme). Işık
-                    // değişen karede (namlu alevi) ve hareket eden nesnenin yakınında ortalama yapılmaz
-                    const bool lightingChanged = Renderer3D::ConsumeLightingChange(this);
-                    const uint32_t next = 1u - m_FSR2HoldIndex;
-                    EnsureTarget(m_FSR2Hold, fsrW, fsrH, GL_RGBA8);
-                    EnsureTarget(m_FSR2HoldState[0], fsrW, fsrH, GL_RGBA16F);
-                    EnsureTarget(m_FSR2HoldState[1], fsrW, fsrH, GL_RGBA16F);
-                    if (!m_FSR2HoldFramebuffer[next])
-                        glCreateFramebuffers(1, &m_FSR2HoldFramebuffer[next]);
-                    const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-                    glNamedFramebufferDrawBuffers(m_FSR2HoldFramebuffer[next], 2, buffers);
-                    glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT0, m_FSR2Hold.Texture, 0);
-                    glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT1, m_FSR2HoldState[next].Texture, 0);
-                    glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2HoldFramebuffer[next]);
-                    glViewport(0, 0, (GLsizei)fsrW, (GLsizei)fsrH);
-                    hold->Bind();
-                    hold->SetInt("u_Current", 0);
-                    hold->SetInt("u_State", 1);
-                    hold->SetInt("u_Depth", 2);
-                    hold->SetInt("u_Motion", 3);
-                    hold->SetInt("u_Reactive", 4);
-                    hold->SetInt("u_HasReactive", fsrReactive ? 1 : 0);
-                    hold->SetInt("u_Velocity", 5);
-                    hold->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
-                    hold->SetInt("u_Hold", ((m_CameraStill || m_CameraNearlyStill) && m_FSR2HoldValid && !prm.Reset && !lightingChanged) ? 1 : 0);
-                    hold->SetFloat2("u_Texel", glm::vec2(1.0f / (float)fsrW, 1.0f / (float)fsrH));
-                    hold->SetFloat("u_Near", m_FinalNear);
-                    hold->SetFloat("u_Far", m_FinalFar);
-                    BindTexture(0, m_FSR2Output.Texture);
-                    BindTexture(1, m_FSR2HoldState[m_FSR2HoldIndex].Texture);
-                    BindTexture(2, GetSceneDepthTexture());
-                    BindTexture(3, m_MotionVectors.Texture);
-                    BindTexture(4, fsrReactive);
-                    BindTexture(5, m_FinalHasVelocity ? m_Velocity.Texture : 0);
-                    PostProcess::DrawFullscreenQuad();
-                    Renderer::GetStats().PostProcessPasses++;
-                    m_FSR2HoldIndex = next;
-                    m_FSR2HoldValid = true;
-                    fsrResult = m_FSR2Hold.Texture;
-                }
-                else
-                    m_FSR2HoldValid = false;
+                const uint32_t fsrResult = RunStillHold(1, m_FSR2Output.Texture, fsrW, fsrH, fsrReactive, m_MotionVectors.Texture,
+                                                        m_CameraStill || m_CameraNearlyStill, prm.Reset);
                 if (fsrW != outW || fsrH != outH)
                 {
                     // FSR AA + uzamsal yükseltici: kenar yumuşatılmış iç çözünürlük görüntüsü aşağıda büyütülür (NIS / FSR 1 / CAS ...)
@@ -2105,6 +2119,9 @@ namespace Conqueror
             PostProcess::DrawFullscreenQuad();
             m_SGSR2Index = ni;
             m_SGSR2Valid = true;
+            // 288: SGSR 2 kamera dururken küp silüetlerini ve merdivenleri titreşim döngüsüyle oynatıyordu (>8 seviye %0.87, TAAU %0.03);
+            // FSR 2'deki tutucu (hareket vektörü yok: yalnız kamera tam dururken)
+            const uint32_t sgsrResult = RunStillHold(2, m_SGSR2History[ni].Texture, outW, outH, 0, 0, m_CameraStill, !historyOk);
 
             toOutput();
             sharpen->Bind();
@@ -2113,7 +2130,7 @@ namespace Conqueror
             sharpen->SetFloat("u_Amount", std::min(0.5f * upSharp + ((settings.Sharpen && !m_CASSharpen) ? settings.SharpenAmount : 0.0f), 1.0f));
             sharpen->SetInt("u_HasMotionState", m_CameraStill ? 0 : 2);
             sharpen->SetFloat("u_MotionAmount", kTAAMotionSharpen);
-            BindTexture(0, m_SGSR2History[ni].Texture);
+            BindTexture(0, sgsrResult);
             PostProcess::DrawFullscreenQuad();
             sharpen->SetInt("u_HasMotionState", 0);
             Renderer::GetStats().PostProcessPasses += 3;

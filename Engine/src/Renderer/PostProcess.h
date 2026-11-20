@@ -145,6 +145,8 @@ namespace Conqueror
         void RunBloom(const PostProcessSettings& settings);
         void RunComposite(const PostProcessSettings& settings, float time);
         void RunFinal(const PostProcessSettings& settings, uint32_t outputFramebuffer, const int outputViewport[4]);
+        // Zamansal yükselticinin çıktısı için kamera dururken titreşim tutucu (FSR2Hold.cqsh); sonuç dokusu
+        uint32_t RunStillHold(int owner, uint32_t source, uint32_t w, uint32_t h, uint32_t reactive, uint32_t motion, bool still, bool reset);
 
         // Unreal render paketi (PostProcessEffects.cpp): SSR + hacimsel sis/bulut birleştirme, TAA, alan derinliği,
         // hareket bulanıklığı, otomatik pozlama. Her biri yalnızca açıkken çalışır ve hedeflerini ilk kullanımda kurar.
@@ -213,6 +215,9 @@ namespace Conqueror
         uint32_t m_FSR2HoldIndex = 0;
         uint32_t m_FSR2HoldFramebuffer[2] = { 0, 0 };
         bool m_FSR2HoldValid = false;
+        int m_FSR2HoldOwner = 0;
+        uint32_t m_FSR2HoldFrame = 0;
+        uint32_t m_FSR2HoldStillFrames = 0;               // 1 FSR 2, 2 SGSR 2 (durum başka yükselticinin çıktısıyla karışmasın)
         // Ekranda 0.02 pikselden az kayan kamera (oyundaki karakter denetleyicisinin kayan nokta kıpırtısı katı m_CameraStill'i bozar)
         bool m_CameraNearlyStill = false;
         // FSR AA + uzamsal yükseltici (NIS, FSR 1, CAS ...): FSR 2 iç çözünürlükte kenar yumuşatır, büyütmeyi seçilen yükseltici yapar
