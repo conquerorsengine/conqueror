@@ -28,6 +28,12 @@ uniform mat4 u_InvViewProj;
 uniform vec4 u_ShadowBoxes[64];   // [2i] min, [2i+1] max (dünya)
 uniform int u_ShadowBoxCount = 0;
 uniform vec3 u_TowardSun = vec3(0.0, 1.0, 0.0);
+// 287: nesne hız tamponu (Velocity.cqsh): w = 1 hareket eden nesne, 2 nesnenin önceki karede durduğu ve şimdi açılan alan, 3 yeni beliren /
+// görseli değişen nesne. Açılan / yeni alanda FSR 2 geçmişi tamamen bırakır (doğal FSR AA'da sıfır hareketli piksel kırpılmadan tutulduğu
+// için sürüklenen küpün eski görüntüsü yerinde kalıyor, zemin çizgileri küpün üstünde çizgi çizgi kalıyordu); hareket eden nesnenin
+// kendisinde geçmişe daha az güvenilir
+uniform sampler2D u_Velocity;
+uniform int u_HasVelocity = 0;
 
 bool InMovingShadow(vec3 p)
 {
@@ -50,6 +56,17 @@ bool InMovingShadow(vec3 p)
 void main()
 {
     float reactive = u_HasReactive == 1 ? texture(u_Reactive, v_UV).r : 0.0;
+    if (u_HasVelocity == 1)
+    {
+        vec4 vel = texture(u_Velocity, v_UV);
+        if (vel.x < 5000.0)
+        {
+            if (vel.w > 1.5)
+                reactive = 1.0;
+            else if (dot(vel.xy, vel.xy) > 1e-10)
+                reactive = max(reactive, 0.5);
+        }
+    }
     float depth = texture(u_Depth, v_UV).r;
     if (depth < 1.0 && u_ShadowBoxCount > 0)
     {

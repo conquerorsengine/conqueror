@@ -251,6 +251,8 @@ namespace Conqueror
         DestroyTarget(m_FSR2Hold);
         DestroyTarget(m_FSR2HoldState[0]);
         DestroyTarget(m_FSR2HoldState[1]);
+        DestroyTarget(m_FSR2HoldCounters[0]);
+        DestroyTarget(m_FSR2HoldCounters[1]);
         for (uint32_t& fb : m_FSR2HoldFramebuffer)
         {
             if (fb)
@@ -1913,7 +1915,8 @@ namespace Conqueror
                 MergeShadowBoxes(s_FSRShadowBoxes, 32);
                 const uint32_t shadowMask = GetSceneShadowMaskTexture();
                 const bool hasPrevShadow = shadowMask && m_FSR2PrevShadow.Texture && m_FSR2PrevShadow.Width == m_Width && m_FSR2PrevShadow.Height == m_Height;
-                if (!s_FSRShadowBoxes.empty() && hasPrevShadow)
+                const bool shadowReactive = !s_FSRShadowBoxes.empty() && hasPrevShadow;
+                if (shadowReactive || m_FinalHasVelocity)
                 {
                     EnsureTarget(m_FSR2Reactive, m_Width, m_Height, GL_R8);
                     glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2Reactive.Framebuffer);
@@ -1924,10 +1927,12 @@ namespace Conqueror
                     fsrReactivePass->SetInt("u_Shadow", 2);
                     fsrReactivePass->SetInt("u_PrevShadow", 3);
                     fsrReactivePass->SetInt("u_Motion", 4);
-                    fsrReactivePass->SetInt("u_HasPrevShadow", 1);
+                    fsrReactivePass->SetInt("u_HasPrevShadow", shadowReactive ? 1 : 0);
+                    fsrReactivePass->SetInt("u_Velocity", 5);
+                    fsrReactivePass->SetInt("u_HasVelocity", m_FinalHasVelocity ? 1 : 0);
                     fsrReactivePass->SetInt("u_HasReactive", m_ReactiveUsed ? 1 : 0);
                     fsrReactivePass->SetMat4("u_InvViewProj", m_FinalInvViewProj);
-                    fsrReactivePass->SetInt("u_ShadowBoxCount", (int)(s_FSRShadowBoxes.size() / 2));
+                    fsrReactivePass->SetInt("u_ShadowBoxCount", shadowReactive ? (int)(s_FSRShadowBoxes.size() / 2) : 0);
                     fsrReactivePass->SetFloat3("u_TowardSun", towardSun);
                     for (size_t i = 0; i < s_FSRShadowBoxes.size(); ++i)
                         fsrReactivePass->SetFloat4("u_ShadowBoxes[" + std::to_string(i) + "]", s_FSRShadowBoxes[i]);
@@ -1936,6 +1941,7 @@ namespace Conqueror
                     BindTexture(2, shadowMask);
                     BindTexture(3, m_FSR2PrevShadow.Texture);
                     BindTexture(4, m_MotionVectors.Texture);
+                    BindTexture(5, m_FinalHasVelocity ? m_Velocity.Texture : 0);
                     PostProcess::DrawFullscreenQuad();
                     Renderer::GetStats().PostProcessPasses++;
                     fsrReactive = m_FSR2Reactive.Texture;
@@ -1979,14 +1985,17 @@ namespace Conqueror
                 {
                     const uint32_t next = 1u - m_FSR2HoldIndex;
                     EnsureTarget(m_FSR2Hold, fsrW, fsrH, GL_RGBA8);
-                    EnsureTarget(m_FSR2HoldState[0], fsrW, fsrH, GL_RGBA32F);   // a: varyans + 2 x kenar yaşı (yarım hassasiyette varyans kayboluyordu)
-                    EnsureTarget(m_FSR2HoldState[1], fsrW, fsrH, GL_RGBA32F);
+                    EnsureTarget(m_FSR2HoldState[0], fsrW, fsrH, GL_RGBA16F);
+                    EnsureTarget(m_FSR2HoldState[1], fsrW, fsrH, GL_RGBA16F);
+                    EnsureTarget(m_FSR2HoldCounters[0], fsrW, fsrH, GL_RGBA16F);
+                    EnsureTarget(m_FSR2HoldCounters[1], fsrW, fsrH, GL_RGBA16F);
                     if (!m_FSR2HoldFramebuffer[next])
                         glCreateFramebuffers(1, &m_FSR2HoldFramebuffer[next]);
-                    const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-                    glNamedFramebufferDrawBuffers(m_FSR2HoldFramebuffer[next], 2, buffers);
+                    const GLenum buffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+                    glNamedFramebufferDrawBuffers(m_FSR2HoldFramebuffer[next], 3, buffers);
                     glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT0, m_FSR2Hold.Texture, 0);
                     glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT1, m_FSR2HoldState[next].Texture, 0);
+                    glNamedFramebufferTexture(m_FSR2HoldFramebuffer[next], GL_COLOR_ATTACHMENT2, m_FSR2HoldCounters[next].Texture, 0);
                     glBindFramebuffer(GL_FRAMEBUFFER, m_FSR2HoldFramebuffer[next]);
                     glViewport(0, 0, (GLsizei)fsrW, (GLsizei)fsrH);
                     hold->Bind();
@@ -2002,6 +2011,8 @@ namespace Conqueror
                     hold->SetFloat("u_Far", m_FinalFar);
                     BindTexture(0, m_FSR2Output.Texture);
                     BindTexture(1, m_FSR2HoldState[m_FSR2HoldIndex].Texture);
+                    hold->SetInt("u_Counters", 5);
+                    BindTexture(5, m_FSR2HoldCounters[m_FSR2HoldIndex].Texture);
                     BindTexture(2, GetSceneDepthTexture());
                     BindTexture(3, m_MotionVectors.Texture);
                     BindTexture(4, fsrReactive);
